@@ -1,0 +1,52 @@
+\documentclass[UKenglish]{ifimaster}  %% ... or USenglish or norsk or nynorsk
+\usepackage[utf8]{inputenc}           %% ... or latin1 or applemac
+\usepackage[T1]{fontenc,url}
+\urlstyle{sf}
+\usepackage{babel,textcomp,csquotes,duomasterforside,varioref,graphicx}
+\usepackage[backend=biber,style=numeric-comp]{biblatex}
+\usepackage[pdftex,pdfpagelabels,bookmarks,hyperindex,hyperfigures]{hyperref}
+
+\title{The title of my thesis}        %% ... or whatever
+\subtitle{Any short subtitle}         %% ... if any
+\author{Bjørn Ivar Teigen}                      %% ... or whoever 
+
+\bibliography{mybib}                  %% ... or whatever
+
+\begin{document}
+\duoforside[dept={Department of Informatics},   %% ... or your department
+  program={Robotics and intelligent systems},  %% ... or your programme
+  long]                                        %% ... or short
+
+\frontmatter{}
+
+\chapter*{Abstract}                   %% ... or Sammendrag or Samandrag
+
+\tableofcontents{}
+\listoffigures{}
+\listoftables{}
+
+\chapter*{Preface}                    %% ... or Forord
+
+\mainmatter{}
+\part{Introduction}                   %% ... or Innledning or Innleiing
+
+\chapter{Background}                  %% ... or Bakgrunn
+\section{Machine learning}
+\subsection{Reinforcement learning}
+\subsubsection{Autonomous agents}
+\paragraph{Reward functions}
+\subparagraph{some math}
+
+\part{The project}                    %% ... or ??
+
+\chapter{Planning the project}        %% ... or ??
+
+
+\part{Conclusion}                     %% ... or Konklusjon
+
+\chapter{Results}                     %% ... or ??
+
+
+\backmatter{}
+\printbibliography
+\end{document}
