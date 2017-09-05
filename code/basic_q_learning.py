@@ -10,26 +10,41 @@ class Qlearner(Agent):
         print(env.reward_range)
         self.model = TfTwoLayerNet(self.observation_space.shape[0],
                                    self.action_space.n)
-        self.gamma = 0.99
+        self.gamma = 0.9
+        self.random_action_prob = 0.5
+        self.random_action_decay = 0.99
         self.observations = []
         self.actions = []
+        self.replay_memory = []
+        self.replay_memory_size = 10000
+        self.minibatch_size = 10
+        self.old_weights = self.model.get_weights()
+        self.target_update_freq = 100
 
-    def train(self, obs, a, r):
-        targets = []
-        targetActionMask = []
-        for i in range(1, len(obs)):
-            obs_t = obs[i].tolist()
-            old_weights = self.model.get_weights()
-            Qnext = self.model.predict(np.asarray([obs_t]), weights=old_weights)[0][0]
-            targets.append(r[i] + self.gamma*np.max(Qnext))
-            targetActionMask.append([a[i] == j for j in range(self.action_space.n)])
-        self.model.train(np.asarray(obs[1:]).reshape(-1, self.observation_space.shape[0]),
-                         np.asarray(targets),
-                         np.asarray(targetActionMask))
+    def train(self):
+        data = random.sample(self.replay_memory, self.minibatch_size)
+        states = [m[0] for m in data]
+        a = [m[1] for m in data]
+        obs = [m[2] for m in data]
+        r = [m[3] for m in data]
+        targets = np.zeros(len(data))
+        targetActionMask = np.zeros(
+                        (self.minibatch_size, self.action_space.n), dtype=int)
+        target_q_values = self.model.predict(obs, weights=self.old_weights)
+        max_q_values = np.max(target_q_values, axis=1)
+        for i in range(len(data)):
+            targets[i] = r[i]
+            if not data[i][4]:
+                targets[i] += self.gamma*max_q_values[i]
+            targetActionMask[i][a[i]] = 1
+        self.model.train(states,
+                         targets,
+                         targetActionMask)
+        self.random_action_prob *= self.random_action_decay
 
     def get_action(self, observation):
-        values = self.model.predict(np.asarray(observation))
-        if random.random() > 0.2:
+        values = self.model.predict([observation])
+        if random.random() > self.random_action_prob:
             return np.argmax(values)
         else:
             return self.action_space.sample()

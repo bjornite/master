@@ -3,28 +3,28 @@ import tensorflow as tf
 
 
 class TfTwoLayerNet(object):
-    def __init__(self, input_size, output_size):
-        self.learning_rate = 1e-4
+    def __init__(self, input_size, output_size, summaries_dir="test_logs"):
+        self.learning_rate = 1e-5
         self.n_input = input_size
-        self.n_hidden_1 = int(self.n_input * 2)
-        self.n_hidden_2 = int(self.n_input)
+        self.n_hidden_1 = 128
+        self.n_hidden_2 = 128
         self.n_output = int(output_size)
         # TF model variables:
         self.X = tf.placeholder("float", [None, self.n_input])
         self.Q = tf.placeholder("float", [None, self.n_output])
-        self.beta = 0
+        self.beta = 1e-6
         with tf.name_scope('layer_1'):
             W1 = tf.Variable(
                 tf.random_normal([self.n_input, self.n_hidden_1],
                                  stddev=np.sqrt(2.0 / self.n_input)), name='W1')
             b1 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_1]), name='b1')
-            h1 = tf.nn.relu(tf.add(tf.matmul(self.X, W1), b1))
+            h1 = tf.nn.tanh(tf.add(tf.matmul(self.X, W1), b1))
         with tf.name_scope('layer_2'):
             W2 = tf.Variable(
                 tf.random_normal([self.n_hidden_1, self.n_hidden_2],
                                  stddev=np.sqrt(2.0 / self.n_hidden_1)), name='W2')
             b2 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_2]), name='b2'),
-            h2 = tf.nn.relu(tf.add(tf.matmul(h1, W2), b2))
+            h2 = tf.nn.tanh(tf.add(tf.matmul(h1, W2), b2))
         with tf.name_scope('output_layer'):
             W3 = tf.Variable(
                 tf.random_normal([self.n_hidden_2, self.n_output],
@@ -45,10 +45,19 @@ class TfTwoLayerNet(object):
                      self.beta * tf.reduce_sum(tf.square(W1)) +
                      self.beta * tf.reduce_sum(tf.square(W2)) +
                      self.beta * tf.reduce_sum(tf.square(W3)))
+        tf.summary.scalar('loss', self.loss)
 
-        self.optimizer = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.loss)
+        optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+        self.global_step = tf.Variable(0, name='global_step', trainable=False)
+        self.train_op = optimizer.minimize(self.loss, global_step=self.global_step)
+
+        self.merged = tf.summary.merge_all()
+
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
+        self.train_writer = tf.summary.FileWriter(summaries_dir + '/train',
+                                                  self.sess.graph)
+        self.test_writer = tf.summary.FileWriter(summaries_dir + '/test')
         self.sess.run(init)
 
     def predict(self, x, weights=None):
@@ -68,9 +77,9 @@ class TfTwoLayerNet(object):
         feed_dict = {self.X: x,
                      self.targetQ: targetQ,
                      self.targetActionMask: targetActionMask}
-        q_values, opt = self.sess.run([self.Q,
-                                       self.optimizer],
-                                      feed_dict=feed_dict)
+        opt, summary, global_step = self.sess.run([self.train_op, self.merged, self.global_step],
+                                     feed_dict=feed_dict)
+        self.train_writer.add_summary(summary, global_step)
         return
 
     def get_weights(self):

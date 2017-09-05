@@ -44,10 +44,13 @@ if __name__ == "__main__":
         returns = []
         observations = []
         actions = []
+        global_steps = 0
         for i in range(args.num_rollouts):
             if len(returns) > 10:
-                print("iter {0}, reward: {1:.2f}".format(i, returns[-1]))
-            obs = env.reset()
+                print("iter {0}, reward: {1:.2f}, r_p: {2}".format(i,
+                                                                   returns[-1],
+                                                                   agent.random_action_prob))
+            state = env.reset()
             local_observations = []
             local_actions = []
             local_rewards = []
@@ -55,26 +58,31 @@ if __name__ == "__main__":
             totalr = 0.
             steps = 0
             while not done:
-                action = agent.get_action(obs[None, :])
-                observations.append(obs)
+                action = agent.get_action(state)
                 actions.append(action)
-                local_observations.append(obs)
                 local_actions.append(action)
                 obs, r, done, _ = env.step(action)
+                observations.append(obs)
+                local_observations.append(obs)
                 if done:
                     r = -100
                 local_rewards.append(r)
                 rewards.append(r)
+                agent.replay_memory.append((state, action, obs, r, done))
+                state = obs
+                if len(agent.replay_memory) > agent.replay_memory_size:
+                    agent.replay_memory.pop(0)
                 totalr += r
                 steps += 1
+                global_steps += 1
                 if args.render:
                     env.render()
                 if steps >= max_steps:
                     break
-            if i > (args.num_rollouts / 10):
-                agent.train(observations[-(args.num_rollouts/10):],
-                            actions[-(args.num_rollouts/10):],
-                            rewards[-(args.num_rollouts/10):])
+                if global_steps % agent.target_update_freq == 0:
+                    agent.old_weights = agent.model.get_weights()
+                if len(agent.replay_memory) > agent.minibatch_size:
+                    agent.train()
             returns.append(totalr)
         plt.scatter(range(len(returns)), returns)
         plt.show()
