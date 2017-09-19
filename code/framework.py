@@ -80,7 +80,8 @@ if __name__ == "__main__":
                 if steps >= max_steps:
                     break
                 if global_steps % agent.target_update_freq == 0:
-                    agent.old_weights = agent.model.get_weights()
+                    current_weights  = agent.model.get_weights()
+                    agent.old_weights = current_weights
                 if len(agent.replay_memory) > agent.minibatch_size:
                     agent.train()
             returns.append(totalr)

@@ -4,7 +4,7 @@ import tensorflow as tf
 
 class TfTwoLayerNet(object):
     def __init__(self, input_size, output_size, summaries_dir="test_logs"):
-        self.learning_rate = 1e-5
+        self.learning_rate = 1e-4
         self.n_input = input_size
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
@@ -18,13 +18,13 @@ class TfTwoLayerNet(object):
                 tf.random_normal([self.n_input, self.n_hidden_1],
                                  stddev=np.sqrt(2.0 / self.n_input)), name='W1')
             b1 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_1]), name='b1')
-            h1 = tf.nn.tanh(tf.add(tf.matmul(self.X, W1), b1))
+            h1 = tf.nn.relu(tf.add(tf.matmul(self.X, W1), b1))
         with tf.name_scope('layer_2'):
             W2 = tf.Variable(
                 tf.random_normal([self.n_hidden_1, self.n_hidden_2],
                                  stddev=np.sqrt(2.0 / self.n_hidden_1)), name='W2')
             b2 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_2]), name='b2'),
-            h2 = tf.nn.tanh(tf.add(tf.matmul(h1, W2), b2))
+            h2 = tf.nn.relu(tf.add(tf.matmul(h1, W2), b2))
         with tf.name_scope('output_layer'):
             W3 = tf.Variable(
                 tf.random_normal([self.n_hidden_2, self.n_output],

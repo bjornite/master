@@ -11,15 +11,16 @@ class Qlearner(Agent):
         self.model = TfTwoLayerNet(self.observation_space.shape[0],
                                    self.action_space.n)
         self.gamma = 0.9
+        self.tau = 0.01
         self.random_action_prob = 0.5
         self.random_action_decay = 0.99
         self.observations = []
         self.actions = []
         self.replay_memory = []
-        self.replay_memory_size = 10000
-        self.minibatch_size = 10
+        self.replay_memory_size = 50000
+        self.minibatch_size = 100
         self.old_weights = self.model.get_weights()
-        self.target_update_freq = 100
+        self.target_update_freq = 1000
 
     def train(self):
         data = random.sample(self.replay_memory, self.minibatch_size)
@@ -30,12 +31,15 @@ class Qlearner(Agent):
         targets = np.zeros(len(data))
         targetActionMask = np.zeros(
                         (self.minibatch_size, self.action_space.n), dtype=int)
+        target_actions = self.model.predict(obs)
         target_q_values = self.model.predict(obs, weights=self.old_weights)
-        max_q_values = np.max(target_q_values, axis=1)
+        baseline_q_values = self.model.predict(states, weights=self.old_weights)
+        max_q_values = [target_q_values[i][np.argmax(target_actions[i])] for i in range(len(target_q_values))]
+        base_q_values = [baseline_q_values[i][np.argmax(target_actions[i])] for i in range(len(baseline_q_values))]
         for i in range(len(data)):
             targets[i] = r[i]
             if not data[i][4]:
-                targets[i] += self.gamma*max_q_values[i]
+                targets[i] += (self.gamma*max_q_values[i] - base_q_values[i])
             targetActionMask[i][a[i]] = 1
         self.model.train(states,
                          targets,
