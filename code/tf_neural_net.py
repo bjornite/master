@@ -86,7 +86,7 @@ class TfTwoLayerNet(object):
         return self.sess.run(self.weights)
 
 
-    class KBTfTwoLayerNet(object):
+class KBTfTwoLayerNet(object):
     def __init__(self, input_size, output_size, summaries_dir="test_logs"):
         self.learning_rate = 5e-5
         self.n_input = input_size
@@ -142,7 +142,6 @@ class TfTwoLayerNet(object):
                      self.beta * tf.reduce_sum(tf.square(WP)) +
                      self.pred_loss)
         tf.summary.scalar('loss', self.loss)
-
 
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
