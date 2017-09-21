@@ -5,7 +5,9 @@ import numpy as np
 import random
 import datetime
 import time
-from basic_q_learning import Qlearner,  Random_agent, KBQlearner
+import os
+from shutil import copyfile
+from basic_q_learning import Qlearner,  Random_agent, KBQlearner, CBQlearner
 import matplotlib.pyplot as plt
 
 def get_agent(name, env, log_dir):
@@ -13,6 +15,8 @@ def get_agent(name, env, log_dir):
         return Qlearner("Qlearner", env, log_dir)
     elif name == "KBQlearner":
         return KBQlearner("KBQlearner", env, log_dir)
+    elif name == "CBQlearner":
+        return CBQlearner("CBQlearner", env, log_dir)
     elif name == "Random_agent":
         return Random_agent("Random_agent", env, log_dir)
     else:
@@ -33,11 +37,16 @@ if __name__ == "__main__":
     parser.add_argument('envname', type=str)
     parser.add_argument('--render', action='store_true')
     parser.add_argument("--max_timesteps", type=int)
-    parser.add_argument('--num_rollouts', type=int, default=20,
-                        help='Number of expert roll outs')
+    parser.add_argument('--num_rollouts', type=int, default=20)
     args = parser.parse_args()
     log_dir = get_log_dir(args.agentname, args.envname)
     print(log_dir)
+    try:
+        os.mkdir(log_dir)
+    except:
+        pass
+    copyfile("tf_neural_net.py", "{}/tf_neural_net.py".format(log_dir))
+    copyfile("basic_q_learning.py", "{}/basic_q_learning.py".format(log_dir))
 
     with tf.Session():
 
