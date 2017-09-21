@@ -3,7 +3,7 @@ import go_vncdriver
 import tensorflow as tf
 import numpy as np
 import random
-from basic_q_learning import Qlearner, Random_agent
+from basic_q_learning import Qlearner,  Random_agent, KBQlearner
 import matplotlib.pyplot as plt
 
 def get_agent(name, env):

@@ -126,7 +126,9 @@ class KBTfTwoLayerNet(object):
         self.weights = [W1, b1, W2, b2, W3, b3]
 
         # Prediction loss
-        self.pred_loss = (tf.reduce_mean(tf.square(tf.subtract(self.prediction, self.X_next))))
+        self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
+                                        reduction_indices=[1])
+        self.pred_loss = (tf.reduce_mean(self.pred_error))
 
         # Loss
         self.targetQ = tf.placeholder(tf.float32, [None])
@@ -182,7 +184,7 @@ class KBTfTwoLayerNet(object):
     def get_prediction_error(self, x, x_next):
         feed_dict = {self.X: x,
                      self.X_next: x_next}
-        return self.sess.run([self.pred_loss],
+        return self.sess.run(self.pred_error,
                              feed_dict=feed_dict)
 
     def get_weights(self):

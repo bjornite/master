@@ -1,5 +1,5 @@
 from Agent import Agent
-from tf_neural_net import TfTwoLayerNet
+from tf_neural_net import TfTwoLayerNet, KBTfTwoLayerNet
 import numpy as np
 import random
 
@@ -55,7 +55,7 @@ class Qlearner(Agent):
 
 class KBQlearner(Agent):
     def __init__(self, name, env):
-        super(Qlearner, self).__init__(name, env)
+        super(KBQlearner, self).__init__(name, env)
         print(env.reward_range)
         self.model = KBTfTwoLayerNet(self.observation_space.shape[0],
                                    self.action_space.n)
@@ -87,10 +87,13 @@ class KBQlearner(Agent):
         base_q_values = [baseline_q_values[i][np.argmax(target_actions[i])] for i in range(len(baseline_q_values))]
         knowledge_rewards = self.model.get_prediction_error(states, obs)
         max_knowledge_reward = np.max(knowledge_rewards)
+        knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(len(data)):
             targets[i] = r[i]
             if not data[i][4]:
-                targets[i] += (self.gamma*max_q_values[i] - base_q_values[i] + knowledge_rewards[i]/max_knowledge_reward)
+                targets[i] += (self.gamma*max_q_values[i] -
+                               base_q_values[i] +
+                               knowledge_rewards[i])
             targetActionMask[i][a[i]] = 1
         self.model.train(states,
                          obs,
