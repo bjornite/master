@@ -5,11 +5,11 @@ import random
 
 
 class Qlearner(Agent):
-    def __init__(self, name, env):
-        super(Qlearner, self).__init__(name, env)
-        print(env.reward_range)
+    def __init__(self, name, env, log_dir):
+        super(Qlearner, self).__init__(name, env, log_dir)
         self.model = TfTwoLayerNet(self.observation_space.shape[0],
-                                   self.action_space.n)
+                                   self.action_space.n,
+                                   self.log_dir)
         self.gamma = 0.9
         self.tau = 0.01
         self.random_action_prob = 0.5
@@ -54,11 +54,12 @@ class Qlearner(Agent):
             return self.action_space.sample()
 
 class KBQlearner(Agent):
-    def __init__(self, name, env):
-        super(KBQlearner, self).__init__(name, env)
+    def __init__(self, name, env, log_dir):
+        super(KBQlearner, self).__init__(name, env, log_dir)
         print(env.reward_range)
         self.model = KBTfTwoLayerNet(self.observation_space.shape[0],
-                                   self.action_space.n)
+                                     self.action_space.n,
+                                     self.log_dir)
         self.gamma = 0.9
         self.tau = 0.01
         self.random_action_prob = 0.5

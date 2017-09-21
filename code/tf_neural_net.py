@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 class TfTwoLayerNet(object):
-    def __init__(self, input_size, output_size, summaries_dir="test_logs"):
+    def __init__(self, input_size, output_size, log_dir="test_logs"):
         self.learning_rate = 5e-5
         self.n_input = input_size
         self.n_hidden_1 = 128
@@ -55,9 +55,9 @@ class TfTwoLayerNet(object):
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
-        self.train_writer = tf.summary.FileWriter(summaries_dir + '/train',
+        self.train_writer = tf.summary.FileWriter(log_dir + '/train',
                                                   self.sess.graph)
-        self.test_writer = tf.summary.FileWriter(summaries_dir + '/test')
+        self.test_writer = tf.summary.FileWriter(log_dir + '/test')
         self.sess.run(init)
 
     def predict(self, x, weights=None):
@@ -87,16 +87,16 @@ class TfTwoLayerNet(object):
 
 
 class KBTfTwoLayerNet(object):
-    def __init__(self, input_size, output_size, summaries_dir="test_logs"):
+    def __init__(self, input_size, output_size, log_dir="test_logs"):
         self.learning_rate = 5e-5
         self.n_input = input_size
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
         self.n_output = int(output_size)
         # TF model variables:
-        self.X = tf.placeholder("float", [None, self.n_input])
-        self.X_next = tf.placeholder("float", [None, self.n_input])
-        self.Q = tf.placeholder("float", [None, self.n_output])
+        self.X = tf.placeholder("float", [None, self.n_input], name="state")
+        self.X_next = tf.placeholder("float", [None, self.n_input], name="obs")
+        self.Q = tf.placeholder("float", [None, self.n_output], name="Q-values")
         self.beta = 1e-5
         with tf.name_scope('layer_1'):
             W1 = tf.Variable(
@@ -122,27 +122,33 @@ class KBTfTwoLayerNet(object):
                                  stddev=np.sqrt(2.0 / self.n_input)), name='WP')
             bP = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP')
             self.prediction = tf.add(tf.matmul(self.X, WP), bP)
-
-        self.weights = [W1, b1, W2, b2, W3, b3]
-
-        # Prediction loss
-        self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
-                                        reduction_indices=[1])
-        self.pred_loss = (tf.reduce_mean(self.pred_error))
-
-        # Loss
-        self.targetQ = tf.placeholder(tf.float32, [None])
-        self.targetActionMask = tf.placeholder(
-            tf.float32, [None, self.n_output])
-
-        q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
-                                 reduction_indices=[1])
-        self.loss = (tf.reduce_mean(tf.square(tf.subtract(q_values, self.targetQ))) +
-                     self.beta * tf.reduce_sum(tf.square(W1)) +
-                     self.beta * tf.reduce_sum(tf.square(W2)) +
-                     self.beta * tf.reduce_sum(tf.square(W3)) +
-                     self.beta * tf.reduce_sum(tf.square(WP)) +
-                     self.pred_loss)
+        self.weightnames = ["W1", "b1", "W2", "b2", "W3", "b3", "WP", "bP"]
+        self.weights = [W1, b1, W2, b2, W3, b3, WP, bP]
+        with tf.name_scope('prediction_loss'):
+            # Prediction loss
+            self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
+                                            reduction_indices=[1])
+            self.pred_loss = (tf.reduce_mean(self.pred_error))
+        with tf.name_scope('policy_loss'):
+            # Loss
+            self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
+            self.targetActionMask = tf.placeholder(
+                tf.float32, [None, self.n_output])
+            
+            q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
+                                     reduction_indices=[1])
+            self.policy_loss = tf.reduce_mean(tf.square(tf.subtract(q_values, self.targetQ)))
+        with tf.name_scope('loss_function'):
+            self.loss = (self.policy_loss +
+                         self.beta * tf.reduce_sum(tf.square(W1)) +
+                         self.beta * tf.reduce_sum(tf.square(W2)) +
+                         self.beta * tf.reduce_sum(tf.square(W3)) +
+                         self.beta * tf.reduce_sum(tf.square(WP)) +
+                         self.pred_loss)
+        for w in range(len(self.weights)):
+            tf.summary.histogram(self.weightnames[w], self.weights[w])
+        tf.summary.scalar('mean_policy_loss', self.policy_loss)
+        tf.summary.scalar('mean_pred_error', self.pred_loss)
         tf.summary.scalar('loss', self.loss)
 
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
@@ -153,9 +159,9 @@ class KBTfTwoLayerNet(object):
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
-        self.train_writer = tf.summary.FileWriter(summaries_dir + '/train',
+        self.train_writer = tf.summary.FileWriter(log_dir + '/train',
                                                   self.sess.graph)
-        self.test_writer = tf.summary.FileWriter(summaries_dir + '/test')
+        self.test_writer = tf.summary.FileWriter(log_dir + '/test')
         self.sess.run(init)
 
     def predict(self, x, weights=None):

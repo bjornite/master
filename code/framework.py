@@ -3,18 +3,23 @@ import go_vncdriver
 import tensorflow as tf
 import numpy as np
 import random
+import datetime
+import time
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner
 import matplotlib.pyplot as plt
 
-def get_agent(name, env):
+def get_agent(name, env, log_dir):
     if name == "Qlearner":
-        return Qlearner("Qlearner", env)
+        return Qlearner("Qlearner", env, log_dir)
     elif name == "KBQlearner":
-        return KBQlearner("KBQlearner", env)
+        return KBQlearner("KBQlearner", env, log_dir)
     elif name == "Random_agent":
-        return Random_agent("Random_agent", env)
+        return Random_agent("Random_agent", env, log_dir)
     else:
         print("No agent type named {0}".format(name))
+
+def get_log_dir(name, env):
+    return "logfiles/{0}_{1}_{2}_{3}".format(name, env, (datetime.datetime.now() - datetime.datetime(1970, 1, 1)).days, str(time.localtime().tm_hour) + str(time.localtime().tm_min))
 
 
 if __name__ == "__main__":
@@ -31,6 +36,8 @@ if __name__ == "__main__":
     parser.add_argument('--num_rollouts', type=int, default=20,
                         help='Number of expert roll outs')
     args = parser.parse_args()
+    log_dir = get_log_dir(args.agentname, args.envname)
+    print(log_dir)
 
     with tf.Session():
 
@@ -40,7 +47,7 @@ if __name__ == "__main__":
         max_steps = args.max_timesteps or env.spec.timestep_limit
 
         print('Initializing agent')
-        agent = get_agent(args.agentname, env)
+        agent = get_agent(args.agentname, env, log_dir)
         print('Initialized')
         rewards = []
         returns = []
@@ -77,6 +84,7 @@ if __name__ == "__main__":
                 totalr += r
                 steps += 1
                 global_steps += 1
+                
                 if args.render:
                     env.render()
                 if steps >= max_steps:
