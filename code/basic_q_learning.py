@@ -13,7 +13,7 @@ class Qlearner(Agent):
         self.gamma = 0.9
         self.tau = 0.01
         self.random_action_prob = 0.5
-        self.random_action_decay = 0.99
+        self.random_action_decay = 0.999
         self.observations = []
         self.actions = []
         self.replay_memory = []

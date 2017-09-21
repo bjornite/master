@@ -4,7 +4,7 @@ import tensorflow as tf
 
 class TfTwoLayerNet(object):
     def __init__(self, input_size, output_size, summaries_dir="test_logs"):
-        self.learning_rate = 1e-4
+        self.learning_rate = 5e-5
         self.n_input = input_size
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
@@ -12,7 +12,7 @@ class TfTwoLayerNet(object):
         # TF model variables:
         self.X = tf.placeholder("float", [None, self.n_input])
         self.Q = tf.placeholder("float", [None, self.n_output])
-        self.beta = 1e-6
+        self.beta = 1e-5
         with tf.name_scope('layer_1'):
             W1 = tf.Variable(
                 tf.random_normal([self.n_input, self.n_hidden_1],
