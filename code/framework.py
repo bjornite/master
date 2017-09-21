@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 def get_agent(name, env):
     if name == "Qlearner":
         return Qlearner("Qlearner", env)
+    elif name == "KBQlearner":
+        return KBQlearner("KBQlearner", env)
     elif name == "Random_agent":
         return Random_agent("Random_agent", env)
     else:
