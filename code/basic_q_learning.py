@@ -142,25 +142,38 @@ class CBQlearner(Agent):
         baseline_q_values = self.model.predict(states, weights=self.old_weights)
         max_q_values = [target_q_values[i][np.argmax(target_actions[i])] for i in range(len(target_q_values))]
         base_q_values = [baseline_q_values[i][np.argmax(target_actions[i])] for i in range(len(baseline_q_values))]
-        knowledge_rewards = self.model.get_prediction_error(states, obs)
-        competence_rewards = self.model.get_meta_prediction_error(states, obs)
+        knowledge_rewards = self.model.get_prediction_error(states,
+                                                            targetActionMask,
+                                                            obs)
         max_knowledge_reward = np.max(knowledge_rewards)
-        knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        if max_knowledge_reward > 1:
+            knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        competence_rewards = self.model.get_meta_prediction_error(states,
+                                                                  targetActionMask,
+                                                                  knowledge_rewards,
+                                                                  obs)
+        max_competence_reward = np.max(abs(competence_rewards))
+        if max_competence_reward > 1:
+            competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(len(data)):
             targets[i] = r[i]
             if not data[i][4]:
                 targets[i] += (self.gamma*max_q_values[i] -
                                base_q_values[i])
-                #targets[i] += knowledge_rewards[i]
-                targets[i] += competence_rewards[i]
-            targetActionMask[i][a[i]] = 1
+                # targets[i] -= knowledge_rewards[i]
+                if competence_rewards[i] > 0:
+                    targets[i] *= 2
+                    # targets[i] += competence_rewards[i]
+        targetActionMask[i][a[i]] = 1
         self.model.train(states,
+                         targetActionMask,
+                         knowledge_rewards,
                          obs,
                          targets,
                          targetActionMask)
-        self.random_action_prob *= self.random_action_decay
 
     def get_action(self, observation):
+        self.random_action_prob *= self.random_action_decay
         values = self.model.predict([observation])
         if random.random() > self.random_action_prob:
             return np.argmax(values)
