@@ -182,3 +182,4 @@ TSWLatexianTemp*
 # python
 *.pyc
 */*.pyc
+*.pyc
