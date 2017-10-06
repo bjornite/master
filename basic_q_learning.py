@@ -29,8 +29,7 @@ class Qlearner(Agent):
         obs = [m[2] for m in data]
         r = [m[3] for m in data]
         targets = np.zeros(len(data))
-        targetActionMask = np.zeros(
-                        (self.minibatch_size, self.action_space.n), dtype=int)
+        targetActionMask = np.zeros((self.minibatch_size, self.action_space.n), dtype=int)
         target_actions = self.model.predict(obs)
         target_q_values = self.model.predict(obs, weights=self.old_weights)
         baseline_q_values = self.model.predict(states, weights=self.old_weights)
@@ -44,9 +43,9 @@ class Qlearner(Agent):
         self.model.train(states,
                          targets,
                          targetActionMask)
-        self.random_action_prob *= self.random_action_decay
 
     def get_action(self, observation):
+        self.random_action_prob *= self.random_action_decay
         values = self.model.predict([observation])
         if random.random() > self.random_action_prob:
             return np.argmax(values)
@@ -100,9 +99,9 @@ class KBQlearner(Agent):
                          obs,
                          targets,
                          targetActionMask)
-        self.random_action_prob *= self.random_action_decay
 
     def get_action(self, observation):
+        self.random_action_prob *= self.random_action_decay
         values = self.model.predict([observation])
         if random.random() > self.random_action_prob:
             return np.argmax(values)
@@ -127,6 +126,9 @@ class CBQlearner(Agent):
         self.minibatch_size = 100
         self.old_weights = self.model.get_weights()
         self.target_update_freq = 1000
+        self.max_knowledge_reward = 0
+        self.max_competence_reward = 0
+        self.improvement_threshold = 0.2
 
     def train(self):
         data = random.sample(self.replay_memory, self.minibatch_size)
@@ -143,34 +145,31 @@ class CBQlearner(Agent):
         max_q_values = [target_q_values[i][np.argmax(target_actions[i])] for i in range(len(target_q_values))]
         base_q_values = [baseline_q_values[i][np.argmax(target_actions[i])] for i in range(len(baseline_q_values))]
         knowledge_rewards = self.model.get_prediction_error(states,
-                                                            targetActionMask,
                                                             obs)
         max_knowledge_reward = np.max(knowledge_rewards)
-        if max_knowledge_reward > 1:
-            knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        if max_knowledge_reward > self.max_knowledge_reward:
+            self.max_knowledge_reward = max_knowledge_reward
+        knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
         competence_rewards = self.model.get_meta_prediction_error(states,
-                                                                  targetActionMask,
                                                                   knowledge_rewards,
                                                                   obs)
-        max_competence_reward = np.max(abs(competence_rewards))
-        if max_competence_reward > 1:
-            competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
+        max_competence_reward = np.max(competence_rewards)
+        competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(len(data)):
             targets[i] = r[i]
             if not data[i][4]:
                 targets[i] += (self.gamma*max_q_values[i] -
                                base_q_values[i])
                 # targets[i] -= knowledge_rewards[i]
-                if competence_rewards[i] > 0:
-                    targets[i] *= 2
-                    # targets[i] += competence_rewards[i]
-        targetActionMask[i][a[i]] = 1
+                if competence_rewards[i] > self.improvement_threshold and knowledge_rewards:
+                    targets[i] += competence_rewards[i]
+            targetActionMask[i][a[i]] = 1
         self.model.train(states,
-                         targetActionMask,
                          knowledge_rewards,
                          obs,
                          targets,
                          targetActionMask)
+        return np.sum([1.0/len(competence_rewards) for x in competence_rewards if x > self.improvement_threshold])
 
     def get_action(self, observation):
         self.random_action_prob *= self.random_action_decay

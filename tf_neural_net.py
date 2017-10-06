@@ -53,11 +53,10 @@ class TfTwoLayerNet(object):
 
         self.merged = tf.summary.merge_all()
 
-        init = tf.global_variables_initializer()
         self.sess = tf.Session()
-        self.train_writer = tf.summary.FileWriter(log_dir + '/train',
+        self.train_writer = tf.summary.FileWriter(log_dir,
                                                   self.sess.graph)
-        self.test_writer = tf.summary.FileWriter(log_dir + '/test')
+        init = tf.global_variables_initializer()
         self.sess.run(init)
 
     def predict(self, x, weights=None):
@@ -73,13 +72,13 @@ class TfTwoLayerNet(object):
     def train(self, x, targetQ, targetActionMask):
         # Calculate next prediction, the modules encoding and the error of the last prediction
         # TODO: Optimize so the train step doesn't need to do a forward pass
-        # Calculate next prediction, the modules encoding and the error of the last prediction
         feed_dict = {self.X: x,
                      self.targetQ: targetQ,
                      self.targetActionMask: targetActionMask}
         opt, summary, global_step = self.sess.run([self.train_op, self.merged, self.global_step],
                                                   feed_dict=feed_dict)
-        self.train_writer.add_summary(summary, global_step)
+        if global_step % 100 == 0:
+            self.train_writer.add_summary(summary, global_step)
         return
 
     def get_weights(self):
@@ -122,8 +121,9 @@ class KBTfTwoLayerNet(object):
                                  stddev=np.sqrt(2.0 / self.n_input)), name='WP')
             bP = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP')
             self.prediction = tf.add(tf.matmul(self.X, WP), bP)
-            self.weightnames = ["W1", "b1", "W2", "b2", "W3", "b3", "WP", "bP"]
-            self.weights = [W1, b1, W2, b2, W3, b3, WP, bP]
+
+        self.weightnames = ["W1", "b1", "W2", "b2", "W3", "b3", "WP", "bP"]
+        self.weights = [W1, b1, W2, b2, W3, b3, WP, bP]
         with tf.name_scope('prediction_loss'):
             # Prediction loss
             self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
@@ -159,9 +159,8 @@ class KBTfTwoLayerNet(object):
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
-        self.train_writer = tf.summary.FileWriter(log_dir + '/train',
+        self.train_writer = tf.summary.FileWriter(log_dir,
                                                   self.sess.graph)
-        self.test_writer = tf.summary.FileWriter(log_dir + '/test')
         self.sess.run(init)
 
     def predict(self, x, weights=None):
@@ -184,7 +183,8 @@ class KBTfTwoLayerNet(object):
                      self.targetActionMask: targetActionMask}
         opt, summary, global_step = self.sess.run([self.train_op, self.merged, self.global_step],
                                                   feed_dict=feed_dict)
-        self.train_writer.add_summary(summary, global_step)
+        if global_step % 100 == 0:
+            self.train_writer.add_summary(summary, global_step)
         return
 
     def get_prediction_error(self, x, x_next):
@@ -210,7 +210,7 @@ class CBTfTwoLayerNet(object):
         self.action = tf.placeholder("float", [None, self.n_output], name="action")
         self.knowledge_reward = tf.placeholder("float", [None], name="knowledge_reward")
         #self.Q = tf.placeholder("float", [None, self.n_output],  name="Q-values")
-        self.beta = 1e-5
+        self.beta = 1e-7
         with tf.name_scope('policy_network'):
             with tf.name_scope('layer_1'):
                 W1 = tf.Variable(
@@ -231,56 +231,38 @@ class CBTfTwoLayerNet(object):
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
                 self.Q = tf.add(tf.matmul(h2, W3), b3)
         with tf.name_scope('prediction_layer'):
-            WP1 = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, self.n_input + self.n_output],
-                                 stddev=np.sqrt(2.0 / self.n_input + self.n_output)), name='WP1')
-            bP1 = tf.Variable(tf.constant(0.1, shape=[self.n_input + self.n_output]), name='bP1')
-            hP1 = tf.add(tf.matmul(tf.concat([self.X, self.action], 1), WP1), bP1)
-            WP2 = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, self.n_input],
-                                 stddev=np.sqrt(2.0 / self.n_input + self.n_output)), name='WP1')
-            bP2 = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP1')
-            self.prediction = tf.add(tf.matmul(hP1, WP2), bP2)
+            WP = tf.Variable(
+                tf.random_normal([self.n_input, self.n_input],
+                                 stddev=np.sqrt(2.0 / self.n_input)), name='WP')
+            bP = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP')
+            self.prediction = tf.add(tf.matmul(self.X, WP), bP)
         with tf.name_scope('error_prediction_layer'):
-            WEP1 = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, self.n_input + self.n_output],
-                                 stddev=np.sqrt(2.0 / self.n_input + self.n_output)), name='WEP1')
-            bEP1 = tf.Variable(tf.constant(0.1, shape=[self.n_input + self.n_output]), name='bEP1')
-            hEP1 = tf.add(tf.matmul(tf.concat([self.X, self.action], 1), WEP1), bEP1)
-            WEP2 = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, 1],
-                                 stddev=np.sqrt(2.0 / (self.n_input + self.n_output))),
-                name='WEP2')
-            bEP2 = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP2')
-            self.error_prediction = tf.add(tf.matmul(hEP1,
-                                                     WEP2),
-                                           bEP2)
+            WEP = tf.Variable(
+                tf.random_normal([self.n_input, 1],
+                                 stddev=np.sqrt(2.0 / self.n_input)), name='WEP')
+            bEP = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP')
+            self.error_prediction = tf.add(tf.matmul(self.X, WEP), bEP)
 
         self.weightnames = ["W1", "b1",
                             "W2", "b2",
                             "W3", "b3",
-                            "WP1", "bP1",
-                            "WP2", "bP2",
-                            "WEP1", "bEP1",
-                            "WEP2", "bEP2"]
+                            "WP", "bP",
+                            "WEP", "bEP"]
         self.weights = [W1, b1,
                         W2, b2,
                         W3, b3,
-                        WP1, bP1,
-                        WP2, bP2,
-                        WEP1, bEP1,
-                        WEP1, bEP1]
+                        WP, bP,
+                        WEP, bEP]
 
         with tf.name_scope('prediction_loss'):
             # Prediction loss
-            self.pred_error = tf.reduce_sum(tf.abs(tf.subtract(self.prediction, self.X_next)),
+            self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
                                             reduction_indices=[1])
             # self.pred_error = tf.divide(unnormalized_pred_error,
             #                            tf.reduce_max(unnormalized_pred_error, axis=[0]))
             self.pred_loss = tf.reduce_mean(self.pred_error)
             self.pred_loss_regularized = (self.pred_loss +
-                                          self.beta * tf.reduce_sum(tf.square(WP1)) +
-                                          self.beta * tf.reduce_sum(tf.square(WP2)))
+                                          self.beta * tf.reduce_sum(tf.square(WP)))
         with tf.name_scope('error_prediction_loss'):
             # TODO: Figure out how to normalize this, get huge (and negative) values
             self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
@@ -288,8 +270,7 @@ class CBTfTwoLayerNet(object):
                                                         reduction_indices=[1])
             self.error_prediction_loss = tf.reduce_mean(self.error_prediction_error)
             self.error_prediction_loss_regularized = (tf.abs(self.error_prediction_loss) +
-                                                self.beta * tf.reduce_sum(tf.square(WEP1)) +
-                                                self.beta * tf.reduce_sum(tf.square(WEP2)))
+                                                      self.beta * tf.reduce_sum(tf.square(WEP)))
         with tf.name_scope('policy_loss'):
             # Loss
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
@@ -311,31 +292,23 @@ class CBTfTwoLayerNet(object):
         tf.summary.scalar('mean_policy_loss', self.policy_loss)
         tf.summary.scalar('mean_pred_error', self.pred_loss)
 
+        with tf.name_scope('loss'):
+            self.loss = (self.policy_loss +
+                         self.pred_loss_regularized +
+                         self.error_prediction_loss_regularized)
+
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
-        policy_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                        "policy_network")
-        prediction_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                            "prediction_layer")
-        error_prediction_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                                  "error_prediction_layer")
-        self.train_op = optimizer.minimize(self.policy_loss,
-                                           global_step=self.global_step,
-                                           var_list=policy_vars)
-        self.prediction_train_op = optimizer.minimize(self.pred_loss_regularized,
-                                                      global_step=self.global_step,
-                                                      var_list=prediction_vars)
-        self.error_train_op = optimizer.minimize(self.error_prediction_loss_regularized,
-                                                 global_step=self.global_step,
-                                                 var_list=error_prediction_vars)
 
+        self.train_op = optimizer.minimize(self.loss,
+                                           global_step=self.global_step)
+ 
         self.merged = tf.summary.merge_all()
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
-        self.train_writer = tf.summary.FileWriter(log_dir + '/train',
+        self.train_writer = tf.summary.FileWriter(log_dir,
                                                   self.sess.graph)
-        self.test_writer = tf.summary.FileWriter(log_dir + '/test')
         self.sess.run(init)
 
     def predict(self, x, weights=None):
@@ -348,35 +321,31 @@ class CBTfTwoLayerNet(object):
             q_values = self.sess.run(self.Q, feed_dict=feed_dict)
         return q_values
 
-    def train(self, x, action, k_rew, x_next, targetQ, targetActionMask):
+    def train(self, x, k_rew, x_next, targetQ, targetActionMask):
         # Calculate next prediction, the modules encoding and the error of the last prediction
         # TODO: Optimize so the train step doesn't need to do a forward pass
         # Calculate next prediction, the modules encoding and the error of the last prediction
         feed_dict = {self.X: x,
-                     self.action: action,
                      self.knowledge_reward: np.array(k_rew),
                      self.X_next: x_next,
                      self.targetQ: targetQ,
                      self.targetActionMask: targetActionMask}
-        opt, summary, global_step, _, _ = self.sess.run([self.train_op,
-                                                         self.merged,
-                                                         self.global_step,
-                                                         self.prediction_train_op,
-                                                         self.error_train_op],
-                                                        feed_dict=feed_dict)
-        self.train_writer.add_summary(summary, global_step)
+        opt, summary, global_step = self.sess.run([self.train_op,
+                                                   self.merged,
+                                                   self.global_step],
+                                                  feed_dict=feed_dict)
+        if global_step % 100 == 0:
+            self.train_writer.add_summary(summary, global_step)
         return
 
-    def get_prediction_error(self, x, action, x_next):
+    def get_prediction_error(self, x, x_next):
         feed_dict = {self.X: x,
-                     self.action: action,
                      self.X_next: x_next}
         return self.sess.run(self.pred_error,
                              feed_dict=feed_dict)
 
-    def get_meta_prediction_error(self, x, action, knowledge_rewards, x_next):
+    def get_meta_prediction_error(self, x, knowledge_rewards, x_next):
         feed_dict = {self.X: x,
-                     self.action: action,
                      self.knowledge_reward: np.array(knowledge_rewards),
                      self.X_next: x_next}
         return self.sess.run(self.error_prediction_error,

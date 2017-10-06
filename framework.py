@@ -8,7 +8,13 @@ import time
 import os
 from shutil import copyfile
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner, CBQlearner
+from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import gym
+import universe
+
 
 def get_agent(name, env, log_dir):
     if name == "Qlearner":
@@ -22,9 +28,6 @@ def get_agent(name, env, log_dir):
     else:
         print("No agent type named {0}".format(name))
 
-def get_log_dir(name, env):
-    return "logfiles/{0}_{1}_{2}_{3}".format(name, env, (datetime.datetime.now() - datetime.datetime(1970, 1, 1)).days, str(time.localtime().tm_hour) + str(time.localtime().tm_min))
-
 
 if __name__ == "__main__":
     # Load the kind of agent currently being tested
@@ -35,12 +38,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('agentname', type=str)
     parser.add_argument('envname', type=str)
+    parser.add_argument('--log_dir_root', type=str, default="logfiles")
     parser.add_argument('--render', action='store_true')
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
+    parser.add_argument('--num_runs', type=int, default=1)
     args = parser.parse_args()
-    log_dir = get_log_dir(args.agentname, args.envname)
-    print(log_dir)
+    log_dir = get_log_dir(args.agentname, args.envname, args.log_dir_root)
     try:
         os.mkdir(log_dir)
     except:
@@ -48,26 +52,24 @@ if __name__ == "__main__":
     copyfile("tf_neural_net.py", "{}/tf_neural_net.py".format(log_dir))
     copyfile("basic_q_learning.py", "{}/basic_q_learning.py".format(log_dir))
 
-    with tf.Session():
-
-        import gym
-        import universe
+    for run_number in range(args.num_runs):
+        returns = []
         env = gym.make(args.envname)
         max_steps = args.max_timesteps or env.spec.timestep_limit
 
         print('Initializing agent')
+        try:
+            tf.get_default_session().close()
+            print("closed default session")
+        except AttributeError:
+            pass
         agent = get_agent(args.agentname, env, log_dir)
         print('Initialized')
         rewards = []
-        returns = []
         observations = []
         actions = []
         global_steps = 0
         for i in range(args.num_rollouts):
-            if len(returns) > 10:
-                print("iter {0}, reward: {1:.2f}, r_p: {2}".format(i,
-                                                                   returns[-1],
-                                                                   agent.random_action_prob))
             state = env.reset()
             local_observations = []
             local_actions = []
@@ -75,8 +77,11 @@ if __name__ == "__main__":
             done = False
             totalr = 0.
             steps = 0
+            mean_cb_r = 0
             while not done:
                 action = agent.get_action(state)
+                if (state[0] > 0.2):
+                    action = env.action_space.sample()
                 actions.append(action)
                 local_actions.append(action)
                 obs, r, done, _ = env.step(action)
@@ -93,16 +98,21 @@ if __name__ == "__main__":
                 totalr += r
                 steps += 1
                 global_steps += 1
-                
                 if args.render:
                     env.render()
                 if steps >= max_steps:
                     break
                 if global_steps % agent.target_update_freq == 0:
-                    current_weights  = agent.model.get_weights()
+                    current_weights = agent.model.get_weights()
                     agent.old_weights = current_weights
                 if len(agent.replay_memory) > agent.minibatch_size:
-                    agent.train()
+                    mean_cb_r = agent.train()
             returns.append(totalr)
-        plt.scatter(range(len(returns)), returns)
-        plt.show()
+            print("iter {0}, reward: {1:.2f}, cb_r: {2}".format(i,
+                                                                totalr,
+                                                                mean_cb_r))
+        agent.model.sess.close()
+        log_data = pd.DataFrame(returns)
+        log_data["agent"] = [args.agentname]*len(log_data)
+        log_data["env"] = [args.envname]*len(log_data)
+    log_data.to_csv("{0}/returns.csv".format(log_dir))
