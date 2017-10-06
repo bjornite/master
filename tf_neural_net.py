@@ -19,35 +19,40 @@ class CBTfTwoLayerNet(object):
 
         with tf.name_scope('policy_network'):
             with tf.name_scope('layer_1'):
+                bn_input_1 = tf.layers.batch_normalization(self.X)
                 W1 = tf.Variable(
                     tf.random_normal([self.n_input, self.n_hidden_1],
                                      stddev=np.sqrt(2.0 / self.n_input)), name='W1')
                 b1 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_1]), name='b1')
-                h1 = tf.nn.relu(tf.add(tf.matmul(self.X, W1), b1))
+                h1 = tf.nn.relu(tf.add(tf.matmul(bn_input_1, W1), b1))
             with tf.name_scope('layer_2'):
+                bn_input_2 = tf.layers.batch_normalization(h1)
                 W2 = tf.Variable(
                     tf.random_normal([self.n_hidden_1, self.n_hidden_2],
                                      stddev=np.sqrt(2.0 / self.n_hidden_1)), name='W2')
                 b2 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_2]), name='b2'),
-                h2 = tf.nn.relu(tf.add(tf.matmul(h1, W2), b2))
+                h2 = tf.nn.relu(tf.add(tf.matmul(bn_input_2, W2), b2))
             with tf.name_scope('output_layer'):
+                bn_input_3 = tf.layers.batch_normalization(h2)
                 W3 = tf.Variable(
                     tf.random_normal([self.n_hidden_2, self.n_output],
                                      stddev=np.sqrt(2.0 / self.n_hidden_2)), name='W3')
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
-                self.Q = tf.add(tf.matmul(h2, W3), b3)
+                self.Q = tf.add(tf.matmul(bn_input_3, W3), b3)
         with tf.name_scope('prediction_layer'):
+            bn_input_p = tf.layers.batch_normalization(self.X)
             WP = tf.Variable(
                 tf.random_normal([self.n_input, self.n_input],
                                  stddev=np.sqrt(2.0 / self.n_input)), name='WP')
             bP = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP')
-            self.prediction = tf.add(tf.matmul(self.X, WP), bP)
+            self.prediction = tf.add(tf.matmul(bn_input_p, WP), bP)
         with tf.name_scope('error_prediction_layer'):
+            bn_input_ep = tf.layers.batch_normalization(self.X)
             WEP = tf.Variable(
                 tf.random_normal([self.n_input, 1],
                                  stddev=np.sqrt(2.0 / self.n_input)), name='WEP')
             bEP = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP')
-            self.error_prediction = tf.add(tf.matmul(self.X, WEP), bEP)
+            self.error_prediction = tf.add(tf.matmul(bn_input_ep, WEP), bEP)
 
         self.weightnames = ["W1", "b1",
                             "W2", "b2",
