@@ -4,8 +4,8 @@ import tensorflow as tf
 class CBTfTwoLayerNet(object):
     def __init__(self, input_size, output_size, log_dir="test_logs"):
         # Hyperparameters
-        self.learning_rate = 5e-5
-        self.beta = 1e-7
+        self.learning_rate = 1e-3
+        self.beta = 1e-6
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
 
@@ -103,11 +103,20 @@ class CBTfTwoLayerNet(object):
                          self.pred_loss_regularized +
                          self.error_prediction_loss_regularized)
 
-        optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+        optimizer = tf.train.AdamOptimizer(self.learning_rate)
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
-        self.train_op = optimizer.minimize(self.loss,
-                                           global_step=self.global_step)
+        self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        # Compute the gradients for a list of variables.
+        grads = tf.gradients(self.loss, self.var_list)
+
+        # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
+        # need to the 'gradient' part, for example cap them, etc.
+        grads, _ = tf.clip_by_global_norm(grads, 40.0)
+
+        # Ask the optimizer to apply the capped gradients.
+        grads_and_vars = list(zip(grads, self.var_list))
+        self.train_op = optimizer.apply_gradients(grads_and_vars)
         self.merged = tf.summary.merge_all()
 
         init = tf.global_variables_initializer()
