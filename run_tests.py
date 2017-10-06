@@ -17,7 +17,7 @@ for agent in agents:
                 RUN_FILE,
                 agent,
                 env,
-                LOG_DIR_ROOT,
+                log_dir,
                 DEFAULT_NUM_ROLLOUTS))
 
 log_dir = "log_archive/2000_Q-KBQ-CBQ_CartPole-v1-random"
@@ -28,5 +28,5 @@ for agent in agents:
                 RUN_FILE,
                 agent,
                 env,
-                LOG_DIR_ROOT,
+                log_dir,
                 DEFAULT_NUM_ROLLOUTS))
