@@ -30,7 +30,7 @@ if __name__=="__main__":
                         if file == "returns.csv":
                             s = pd.read_csv(os.path.join(log_dir, dir, file),
                                             header=None,
-                                            names=["iteration", "return", "agent", "env"],
+                                            names=["iteration", "return", "agent", "env", "learning_rate"],
                                             skiprows=1)
                             s["run"] = [counter] * len(s)
                             series_dict[counter] = s

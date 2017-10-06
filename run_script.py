@@ -17,16 +17,21 @@ parser.add_argument('--envname', type=str, default=DEFAULT_ENV)
 parser.add_argument('--render', action='store_true')
 parser.add_argument("--max_timesteps", type=int)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
+parser.add_argument('--no_tf_log', action='store_true')
 args = parser.parse_args()
 
 start_time = get_time_string()
 start_datetime = parse_time_string(start_time)
+log_tf = ""
+if args.no_tf_log:
+    log_tf = "--no_tf_log"
 
 for i in range(args.num_runs):
-    os.system("python {0} {1} {2} --log_dir_root={3} --num_rollouts={4}".format(RUN_FILE,
-                                                                           args.agentname,
-                                                                           args.envname,
-                                                                           LOG_DIR_ROOT,
-                                                                           args.num_rollouts))
+    os.system("python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5}".format(RUN_FILE,
+                                                                                    args.agentname,
+                                                                                    args.envname,
+                                                                                    LOG_DIR_ROOT,
+                                                                                    args.num_rollouts,
+                                                                                    log_tf))
 
 print("Success")

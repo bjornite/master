@@ -22,7 +22,11 @@ parser.add_argument('--num_runs', type=int, default=DEFAULT_NUM_RUNS)
 parser.add_argument('--envname', type=str, default=env)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
 parser.add_argument('--num_workers', type=int, default=DEFAULT_NUM_WORKERS)
+parser.add_argument('--no_tf_log', action='store_true')
 args = parser.parse_args()
+log_tf = ""
+if args.no_tf_log:
+    log_tf = "--no_tf_log"
 
 start_time = get_time_string()
 start_datetime = parse_time_string(start_time)
@@ -37,12 +41,13 @@ except:
 for i in range(args.num_runs):
     for agent in agents:
         commands.append(
-            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4}".format(
+            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5}".format(
                 RUN_FILE,
                 agent,
                 env,
                 log_dir,
-                args.num_rollouts))
+                args.num_rollouts,
+                log_tf))
 
 log_dir = "log_archive/{0}_Q-KBQ-CBQ_CartPole-v1-random_{1}".format(args.num_rollouts, start_time)
 try:
@@ -52,12 +57,13 @@ except:
 for i in range(args.num_runs):
     for agent in agents:
         commands.append(
-            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} --random_cartpole".format(
+            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} --random_cartpole {5}".format(
                 RUN_FILE,
                 agent,
                 env,
                 log_dir,
-                args.num_rollouts))
+                args.num_rollouts,
+                log_tf))
 
 pool = Pool(args.num_workers)  # two concurrent commands at a time
 for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):

@@ -16,13 +16,13 @@ import gym
 import universe
 
 
-def get_agent(name, env, log_dir):
+def get_agent(name, env, log_dir, learning_rate):
     if name == "Qlearner":
-        return Qlearner("Qlearner", env, log_dir)
+        return Qlearner("Qlearner", env, log_dir, learning_rate)
     elif name == "KBQlearner":
-        return KBQlearner("KBQlearner", env, log_dir)
+        return KBQlearner("KBQlearner", env, log_dir, learning_rate)
     elif name == "CBQlearner":
-        return CBQlearner("CBQlearner", env, log_dir)
+        return CBQlearner("CBQlearner", env, log_dir, learning_rate)
     elif name == "Random_agent":
         return Random_agent("Random_agent", env, log_dir)
     else:
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
-    parser.add_argument('--learning_rate', type=float)
+    parser.add_argument('--learning_rate', type=float, default=0)
+    parser.add_argument('--no_tf_log', action='store_true')
     args = parser.parse_args()
     log_dir = get_log_dir(args.agentname, args.envname, args.log_dir_root)
     try:
@@ -61,10 +62,10 @@ if __name__ == "__main__":
     print('Initializing agent')
     try:
         tf.get_default_session().close()
-        print("closed default session")
     except AttributeError:
         pass
-    agent = get_agent(args.agentname, env, log_dir)
+    agent = get_agent(args.agentname, env, log_dir, args.learning_rate)
+    learning_rate = agent.model.learning_rate
     if args.random_cartpole:
         args.envname = "CartPole-v1-random"
     print('Initialized')
@@ -115,7 +116,9 @@ if __name__ == "__main__":
                                                             totalr,
                                                             mean_cb_r))
     agent.model.sess.close()
-    log_data = pd.DataFrame(returns)
+    log_data = pd.DataFrame()
+    log_data["return"] = returns
     log_data["agent"] = [args.agentname]*len(log_data)
     log_data["env"] = [args.envname]*len(log_data)
+    log_data["learning_rate"] = learning_rate*len(log_data)
     log_data.to_csv("{0}/returns.csv".format(log_dir))

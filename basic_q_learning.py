@@ -5,11 +5,13 @@ import random
 
 
 class Qlearner(Agent):
-    def __init__(self, name, env, log_dir):
+    def __init__(self, name, env, log_dir, learning_rate):
         super(Qlearner, self).__init__(name, env, log_dir)
         self.model = CBTfTwoLayerNet(self.observation_space.shape[0],
                                      self.action_space.n,
                                      self.log_dir)
+        if learning_rate != 0:
+            self.model.learning_rate = learning_rate
         self.gamma = 0.9
         self.tau = 0.01
         self.random_action_prob = 0.5
@@ -88,8 +90,6 @@ class Qlearner(Agent):
 
 
 class KBQlearner(Qlearner):
-    def __init__(self, name, env, log_dir):
-        super(KBQlearner, self).__init__(name, env, log_dir)
 
     def make_reward(self,
                     r,
@@ -113,8 +113,6 @@ class KBQlearner(Qlearner):
 
 
 class CBQlearner(Qlearner):
-    def __init__(self, name, env, log_dir):
-        super(CBQlearner, self).__init__(name, env, log_dir)
 
     def make_reward(self,
                     r,
