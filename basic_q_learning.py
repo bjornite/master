@@ -1,5 +1,5 @@
 from Agent import Agent
-from tf_neural_net import TfTwoLayerNet, KBTfTwoLayerNet, CBTfTwoLayerNet
+from tf_neural_net import CBTfTwoLayerNet
 import numpy as np
 import random
 
