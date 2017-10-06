@@ -143,7 +143,7 @@ class CBTfTwoLayerNet(object):
             q_values = self.sess.run(self.Q, feed_dict=feed_dict)
         return q_values
 
-    def train(self, x, k_rew, x_next, targetQ, targetActionMask):
+    def train(self, x, k_rew, x_next, targetQ, targetActionMask, no_tf_log):
         # Calculate next prediction, the modules encoding and the error of the last prediction
         # TODO: Optimize so the train step doesn't need to do a forward pass
         # Calculate next prediction, the modules encoding and the error of the last prediction
@@ -156,7 +156,7 @@ class CBTfTwoLayerNet(object):
                                                    self.merged,
                                                    self.global_step],
                                                   feed_dict=feed_dict)
-        if global_step % 100 == 0:
+        if global_step % 100 == 0 and not no_tf_log:
             self.train_writer.add_summary(summary, global_step)
         return
 

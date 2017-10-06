@@ -41,7 +41,7 @@ class Qlearner(Agent):
                 targets[i] += (self.gamma*max_q_values[i] - base_q_values[i])
         return targets
 
-    def train(self):
+    def train(self, no_tf_log):
         data = random.sample(self.replay_memory, self.minibatch_size)
         states = [m[0] for m in data]
         a = [m[1] for m in data]
@@ -78,7 +78,8 @@ class Qlearner(Agent):
                          normalized_knowledge_rewards,
                          obs,
                          targets,
-                         targetActionMask)
+                         targetActionMask,
+                         no_tf_log)
 
     def get_action(self, observation):
         self.random_action_prob *= self.random_action_decay

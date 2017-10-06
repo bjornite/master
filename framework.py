@@ -58,7 +58,7 @@ if __name__ == "__main__":
     returns = []
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
-    
+
     print('Initializing agent')
     try:
         tf.get_default_session().close()
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                 current_weights = agent.model.get_weights()
                 agent.old_weights = current_weights
             if len(agent.replay_memory) > agent.minibatch_size:
-                mean_cb_r = agent.train()
+                mean_cb_r = agent.train(args.no_tf_log)
         returns.append(totalr)
         print("iter {0}, reward: {1:.2f}, cb_r: {2}".format(i,
                                                             totalr,
