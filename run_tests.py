@@ -10,6 +10,10 @@ env = "CartPole-v1"
 DEFAULT_NUM_ROLLOUTS = 2000
 
 log_dir = "log_archive/2000_Q-KBQ-CBQ_CartPole-v1"
+try:
+    os.mkdir(log_dir)
+except:
+    pass
 for agent in agents:
     for i in range(DEFAULT_NUM_RUNS):
         os.system(
@@ -21,6 +25,10 @@ for agent in agents:
                 DEFAULT_NUM_ROLLOUTS))
 
 log_dir = "log_archive/2000_Q-KBQ-CBQ_CartPole-v1-random"
+try:
+    os.mkdir(log_dir)
+except:
+    pass
 for agent in agents:
     for i in range(DEFAULT_NUM_RUNS):
         os.system(
