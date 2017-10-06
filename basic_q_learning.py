@@ -98,15 +98,17 @@ class KBQlearner(Qlearner):
                     base_q_values,
                     knowledge_rewards,
                     competence_rewards):
-        targets = np.zeros(self.minibatch_size)
+        targets = super(KBQlearner, self).make_reward(r,
+                                                      done,
+                                                      max_q_values,
+                                                      base_q_values,
+                                                      knowledge_rewards,
+                                                      competence_rewards)
         max_knowledge_reward = np.max(knowledge_rewards)
-        knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        if max_knowledge_reward > 1:
+            knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(self.minibatch_size):
-            targets[i] = r[i]
-            if not done[i]:
-                targets[i] += (self.gamma*max_q_values[i] -
-                               base_q_values[i])
-                targets[i] += knowledge_rewards[i]
+            targets[i] += knowledge_rewards[i]
         return targets
 
 
@@ -121,17 +123,18 @@ class CBQlearner(Qlearner):
                     base_q_values,
                     knowledge_rewards,
                     competence_rewards):
-        targets = np.zeros(self.minibatch_size)
+        targets = super(CBQlearner, self).make_reward(r,
+                                                      done,
+                                                      max_q_values,
+                                                      base_q_values,
+                                                      knowledge_rewards,
+                                                      competence_rewards)
         max_competence_reward = np.max(competence_rewards)
-        competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
+        if max_competence_reward > 1:
+            competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(self.minibatch_size):
-            targets[i] = r[i]
-            if not done[i]:
-                targets[i] += (self.gamma*max_q_values[i] -
-                               base_q_values[i])
-                # targets[i] -= knowledge_rewards[i]
-                if competence_rewards[i] > self.improvement_threshold:
-                    targets[i] += competence_rewards[i]
+            if competence_rewards[i] > self.improvement_threshold:
+                targets[i] += competence_rewards[i]
         return targets
 
 class Random_agent(Agent):
