@@ -1,7 +1,7 @@
 import datetime
 
 def get_time_string():
-    return datetime.datetime.now().strftime("%d%m%Y-%H%M%S")
+    return datetime.datetime.now().strftime("%d%m%Y-%H%M%S-%f")
 
 
 def get_log_dir(name, env, LOG_DIR_ROOT):
@@ -12,4 +12,4 @@ def get_log_dir(name, env, LOG_DIR_ROOT):
 
 
 def parse_time_string(s):
-    return datetime.datetime.strptime(s, '%d%m%Y-%H%M%S')
+    return datetime.datetime.strptime(s, '%d%m%Y-%H%M%S-%f')
