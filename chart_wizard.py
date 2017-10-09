@@ -11,7 +11,8 @@ from utilities import get_time_string
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('log_dir', type=str)
-    parser.add_argument('envname', type=str)
+    parser.add_argument('--condition', type=str, default="agent")
+    parser.add_argument('--envname', type=str, defailt="CartPole-v1")
     parser.add_argument('--agentname', type=str, default="")
     parser.add_argument('--datetime_low', type=str, default="")
     parser.add_argument('--datetime_high', type=str, default=get_time_string())
@@ -37,5 +38,5 @@ if __name__=="__main__":
                             counter += 1
 
     df = pd.concat(series_dict, ignore_index=True)
-    sns.tsplot(data=df, time="iteration", value="return", condition="learning_rate", unit="run")
+    sns.tsplot(data=df, time="iteration", value="return", condition=args.condition, unit="run")
     plt.show()
