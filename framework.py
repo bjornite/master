@@ -16,15 +16,15 @@ import gym
 import universe
 
 
-def get_agent(name, env, log_dir, learning_rate):
+def get_agent(name, env, log_dir, learning_rate, reg_beta):
     if name == "Qlearner":
-        return Qlearner("Qlearner", env, log_dir, learning_rate)
+        return Qlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "KBQlearner":
-        return KBQlearner("KBQlearner", env, log_dir, learning_rate)
+        return KBQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "CBQlearner":
-        return CBQlearner("CBQlearner", env, log_dir, learning_rate)
+        return CBQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "Random_agent":
-        return Random_agent("Random_agent", env, log_dir)
+        return Random_agent(name, env, log_dir)
     else:
         print("No agent type named {0}".format(name))
 
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
-    parser.add_argument('--learning_rate', type=float, default=0)
+    parser.add_argument('--learning_rate', type=float, default=0.)
+    parser.add_argument('--regularization_beta', type=float, default=0.)
     parser.add_argument('--no_tf_log', action='store_true')
     args = parser.parse_args()
     log_dir = get_log_dir(args.agentname, args.envname, args.log_dir_root)
@@ -64,7 +65,7 @@ if __name__ == "__main__":
         tf.get_default_session().close()
     except AttributeError:
         pass
-    agent = get_agent(args.agentname, env, log_dir, args.learning_rate)
+    agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta)
     learning_rate = agent.model.learning_rate
     if args.random_cartpole:
         args.envname = "CartPole-v1-random"
@@ -91,8 +92,6 @@ if __name__ == "__main__":
             obs, r, done, _ = env.step(action)
             observations.append(obs)
             local_observations.append(obs)
-            if done:
-                r = -100
             local_rewards.append(r)
             rewards.append(r)
             agent.replay_memory.append((state, action, obs, r, done))
@@ -112,9 +111,9 @@ if __name__ == "__main__":
             if len(agent.replay_memory) > agent.minibatch_size:
                 mean_cb_r = agent.train(args.no_tf_log)
         returns.append(totalr)
-        print("iter {0}, reward: {1:.2f}, cb_r: {2}".format(i,
-                                                            totalr,
-                                                            mean_cb_r))
+        print("iter {0}, reward: {1:.2f}, lr: {2}".format(i,
+                                                          totalr,
+                                                          learning_rate))
     agent.model.sess.close()
     log_data = pd.DataFrame()
     log_data["return"] = returns

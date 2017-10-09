@@ -2,10 +2,10 @@ import numpy as np
 import tensorflow as tf
 
 class CBTfTwoLayerNet(object):
-    def __init__(self, input_size, output_size, log_dir="test_logs"):
+    def __init__(self, input_size, output_size, learning_rate=1e-4, reg_beta=1e-6, log_dir="test_logs"):
         # Hyperparameters
-        self.learning_rate = 1e-4
-        self.beta = 1e-6
+        self.learning_rate = learning_rate
+        self.beta = reg_beta
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
 

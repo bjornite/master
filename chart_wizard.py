@@ -37,5 +37,5 @@ if __name__=="__main__":
                             counter += 1
 
     df = pd.concat(series_dict, ignore_index=True)
-    sns.tsplot(data=df, time="iteration", value="return", condition="agent", unit="run")
+    sns.tsplot(data=df, time="iteration", value="return", condition="learning_rate", unit="run")
     plt.show()

@@ -5,13 +5,13 @@ import random
 
 
 class Qlearner(Agent):
-    def __init__(self, name, env, log_dir, learning_rate):
+    def __init__(self, name, env, log_dir, learning_rate, reg_beta):
         super(Qlearner, self).__init__(name, env, log_dir)
         self.model = CBTfTwoLayerNet(self.observation_space.shape[0],
                                      self.action_space.n,
+                                     learning_rate,
+                                     reg_beta,
                                      self.log_dir)
-        if learning_rate != 0:
-            self.model.learning_rate = learning_rate
         self.gamma = 0.9
         self.tau = 0.01
         self.random_action_prob = 0.5
