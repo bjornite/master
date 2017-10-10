@@ -22,6 +22,7 @@ parser.add_argument('--render', action='store_true')
 parser.add_argument("--max_timesteps", type=int)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
 parser.add_argument('--log_tf', action='store_true')
+parser.add_summary('--num_workers', type=int, default=DEFAULT_NUM_WORKERS)
 args = parser.parse_args()
 
 start_time = get_time_string()
