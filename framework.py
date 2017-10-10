@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--learning_rate', type=float, default=1e-2)
     parser.add_argument('--regularization_beta', type=float, default=0.)
     parser.add_argument('--no_tf_log', action='store_true')
     args = parser.parse_args()
@@ -67,6 +67,7 @@ if __name__ == "__main__":
         pass
     agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta)
     learning_rate = agent.model.learning_rate
+    reg_beta = agent.model.beta
     if args.random_cartpole:
         args.envname = "CartPole-v1-random"
     print('Initialized')
@@ -111,9 +112,10 @@ if __name__ == "__main__":
             if len(agent.replay_memory) > agent.minibatch_size:
                 mean_cb_r = agent.train(args.no_tf_log)
         returns.append(totalr)
-        print("iter {0}, reward: {1:.2f}, lr: {2}".format(i,
-                                                          totalr,
-                                                          learning_rate))
+        print("iter {0}, reward: {1:.2f}, lr: {2}, beta: {3}".format(i,
+                                                                     totalr,
+                                                                     learning_rate,
+                                                                     reg_beta))
     agent.model.sess.close()
     log_data = pd.DataFrame()
     log_data["return"] = returns

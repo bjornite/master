@@ -22,11 +22,11 @@ parser.add_argument('--num_runs', type=int, default=DEFAULT_NUM_RUNS)
 parser.add_argument('--envname', type=str, default=env)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
 parser.add_argument('--num_workers', type=int, default=DEFAULT_NUM_WORKERS)
-parser.add_argument('--no_tf_log', action='store_true')
+parser.add_argument('--log_tf', action='store_true')
 args = parser.parse_args()
-log_tf = ""
-if args.no_tf_log:
-    log_tf = "--no_tf_log"
+log_tf = "--no_tf_log"
+if args.log_tf:
+    log_tf = ""
 
 start_time = get_time_string()
 start_datetime = parse_time_string(start_time)

@@ -6,6 +6,7 @@ class CBTfTwoLayerNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
+        self.keep_prob = 0.5
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
 
@@ -19,26 +20,30 @@ class CBTfTwoLayerNet(object):
 
         with tf.name_scope('policy_network'):
             with tf.name_scope('layer_1'):
-                bn_input_1 = tf.layers.batch_normalization(self.X)
                 W1 = tf.Variable(
                     tf.random_normal([self.n_input, self.n_hidden_1],
                                      stddev=np.sqrt(2.0 / self.n_input)), name='W1')
                 b1 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_1]), name='b1')
-                h1 = tf.nn.relu(tf.add(tf.matmul(bn_input_1, W1), b1))
+                z1 = tf.add(tf.matmul(self.X, W1), b1)
+                bn_input_1 = tf.layers.batch_normalization(z1)
+                a1 = tf.nn.relu(bn_input_1)
+                h1 = tf.nn.dropout(a1, self.keep_prob, noise_shape=[1, self.n_hidden_1])
             with tf.name_scope('layer_2'):
                 bn_input_2 = tf.layers.batch_normalization(h1)
                 W2 = tf.Variable(
                     tf.random_normal([self.n_hidden_1, self.n_hidden_2],
                                      stddev=np.sqrt(2.0 / self.n_hidden_1)), name='W2')
                 b2 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_2]), name='b2'),
-                h2 = tf.nn.relu(tf.add(tf.matmul(bn_input_2, W2), b2))
+                z2 = tf.add(tf.matmul(h1, W2), b2)
+                bn_input_2 = tf.layers.batch_normalization(z2)
+                a2 = tf.nn.relu(bn_input_2)
+                h2 = tf.nn.dropout(a2, self.keep_prob, noise_shape=[1, self.n_hidden_2])
             with tf.name_scope('output_layer'):
-                bn_input_3 = tf.layers.batch_normalization(h2)
                 W3 = tf.Variable(
                     tf.random_normal([self.n_hidden_2, self.n_output],
                                      stddev=np.sqrt(2.0 / self.n_hidden_2)), name='W3')
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
-                self.Q = tf.add(tf.matmul(bn_input_3, W3), b3)
+                self.Q = tf.add(tf.matmul(h2, W3), b3)
         with tf.name_scope('prediction_layer'):
             bn_input_p = tf.layers.batch_normalization(self.X)
             WP = tf.Variable(
