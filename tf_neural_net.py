@@ -6,7 +6,7 @@ class CBTfTwoLayerNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        self.keep_prob = 0.5
+        self.keep_prob = tf.placeholder_with_default(0.5, shape=())
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
 
@@ -122,11 +122,11 @@ class CBTfTwoLayerNet(object):
 
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
-        grads, _ = tf.clip_by_global_norm(grads, 40.0)
+        grads, _ = tf.clip_by_global_norm(grads, 4.0)
 
         # Ask the optimizer to apply the capped gradients.
         grads_and_vars = list(zip(grads, self.var_list))
-        self.train_op = optimizer.apply_gradients(grads_and_vars)
+        self.train_op = optimizer.apply_gradients(grads_and_vars, global_step=self.global_step)
         self.merged = tf.summary.merge_all()
 
         init = tf.global_variables_initializer()
@@ -141,7 +141,8 @@ class CBTfTwoLayerNet(object):
     def predict(self, x, weights=None):
         # Calculate prediction and ecoding
         if weights is None:
-            q_values = self.sess.run(self.Q, feed_dict={self.X: x})
+            q_values = self.sess.run(self.Q, feed_dict={self.X: x,
+                                                        self.keep_prob: 1.0})
         else:
             feed_dict = {self.X: x}
             feed_dict.update(zip(self.weights, weights))

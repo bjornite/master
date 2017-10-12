@@ -5,12 +5,12 @@ import random
 import numpy as np
 from utilities import get_time_string, get_log_dir, parse_time_string
 
-DEFAULT_NUM_RUNS = 15
+DEFAULT_NUM_RUNS = 10
 RUN_FILE = "framework.py"
 LOG_DIR_ROOT = "logfiles"
 DEFAULT_AGENT = "Qlearner"
 DEFAULT_ENV = "CartPole-v1"
-DEFAULT_NUM_ROLLOUTS = 50
+DEFAULT_NUM_ROLLOUTS = 3000
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_runs', type=int, default=DEFAULT_NUM_RUNS)

@@ -22,7 +22,7 @@ class Qlearner(Agent):
         self.replay_memory_size = 200000
         self.minibatch_size = 100
         self.old_weights = self.model.get_weights()
-        self.target_update_freq = 1000
+        self.target_update_freq = 100
         self.max_knowledge_reward = 0
         self.max_competence_reward = 0
         self.improvement_threshold = 0.2

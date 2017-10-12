@@ -44,9 +44,9 @@ if __name__ == "__main__":
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
-    parser.add_argument('--learning_rate', type=float, default=1e-2)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--regularization_beta', type=float, default=0.)
-    parser.add_argument('--no_tf_log', action='store_true')
+    parser.add_argument('--no_tf_log', action='store_true', default=False)
     args = parser.parse_args()
     log_dir = get_log_dir(args.agentname, args.envname, args.log_dir_root)
     try:
