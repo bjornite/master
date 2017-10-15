@@ -114,6 +114,29 @@ class KBQlearner(Qlearner):
         return targets
 
 
+class IKBQlearner(Qlearner):
+
+    def make_reward(self,
+                    r,
+                    done,
+                    max_q_values,
+                    #base_q_values,
+                    knowledge_rewards,
+                    competence_rewards):
+        targets = super(IKBQlearner, self).make_reward(r,
+                                                      done,
+                                                      max_q_values,
+                                                      #base_q_values,
+                                                      knowledge_rewards,
+                                                      competence_rewards)
+        max_knowledge_reward = np.max(knowledge_rewards)
+        if max_knowledge_reward > 1:
+            knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        for i in range(self.minibatch_size):
+            targets[i] -= knowledge_rewards[i]
+        return targets
+
+
 class CBQlearner(Qlearner):
 
     def make_reward(self,
@@ -134,8 +157,15 @@ class CBQlearner(Qlearner):
             competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(self.minibatch_size):
             if competence_rewards[i] > self.improvement_threshold:
-                targets[i] += competence_rewards[i]
+                targets[i] += competence_rewards[i] * self.random_action_prob
         return targets
+
+    def get_action(self, observation, is_test=False):
+        values = self.model.predict([observation])
+        if random.random() < self.random_action_prob/4 and not is_test:
+            return self.action_space.sample()
+        else:
+            return np.argmax(values[0])
 
 class SAQlearner(Qlearner):
 
