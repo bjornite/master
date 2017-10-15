@@ -60,6 +60,8 @@ if __name__ == "__main__":
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
 
+    num_test_runs=15
+
     print('Initializing agent')
     try:
         tf.get_default_session().close()
@@ -74,9 +76,15 @@ if __name__ == "__main__":
     rewards = []
     observations = []
     actions = []
+    test_results = []
     global_steps = 0
     for i in range(args.num_rollouts):
         state = env.reset()
+        action = env.action_space.sample()
+        actions.append(action)
+        obs, r, done, _ = env.step(action)
+        last_state = state
+        state = obs
         local_observations = []
         local_actions = []
         local_rewards = []
@@ -85,41 +93,67 @@ if __name__ == "__main__":
         steps = 0
         mean_cb_r = 0
         while not done:
-            action = agent.get_action(state)
+            double_state = np.concatenate([last_state, state])
+            action = agent.get_action(double_state)
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
-            actions.append(action)
-            local_actions.append(action)
             obs, r, done, _ = env.step(action)
-            observations.append(obs)
-            local_observations.append(obs)
-            local_rewards.append(r)
-            rewards.append(r)
-            agent.replay_memory.append((state, action, obs, r, done))
+            if done:
+                r = -1
+            agent.replay_memory.append((double_state,
+                                        action,
+                                        np.concatenate([state, obs]),
+                                        r,
+                                        done))
+            last_state = state
             state = obs
             if len(agent.replay_memory) > agent.replay_memory_size:
                 agent.replay_memory.pop(0)
             totalr += r
             steps += 1
-            global_steps += 1
             if args.render:
                 env.render()
             if steps >= max_steps:
                 break
-            if global_steps % agent.target_update_freq == 0:
+            if agent.model.global_step % agent.target_update_freq == 0:
                 current_weights = agent.model.get_weights()
                 agent.old_weights = current_weights
             if len(agent.replay_memory) > agent.minibatch_size:
                 mean_cb_r = agent.train(args.no_tf_log)
         returns.append(totalr)
-        print("iter {0}, reward: {1:.2f}, lr: {2}, beta: {3}".format(i,
-                                                                     totalr,
-                                                                     learning_rate,
-                                                                     reg_beta))
+        if i % (args.num_rollouts / 100) == 0:
+            totalr = 0.
+            for j in range(num_test_runs):
+                state = env.reset()
+                action = env.action_space.sample()
+                obs, r, done, _ = env.step(action)
+                last_state = state
+                state = obs
+                while not done:
+                    double_state = np.concatenate([last_state, state])
+                    action = agent.get_action(double_state, is_test=True)
+                    if args.random_cartpole and (state[0] > 0.2):
+                        action = env.action_space.sample()
+                    obs, r, done, _ = env.step(action)
+                    if done:
+                        r = -1
+                    last_state = state
+                    state = obs
+                    totalr += r
+                    env.render()
+            test_results.append(totalr / num_test_runs)
+            print("iter {0}, reward: {1:.2f}, lr: {2}, beta: {3}".format(i,
+                                                                         totalr/num_test_runs,
+                                                                         learning_rate,
+                                                                         reg_beta))
+        else:
+            test_results.append(None)
     agent.model.sess.close()
     log_data = pd.DataFrame()
     log_data["return"] = returns
     log_data["agent"] = [args.agentname]*len(log_data)
     log_data["env"] = [args.envname]*len(log_data)
-    log_data["learning_rate"] = learning_rate*len(log_data)
+    log_data["learning_rate"] = [learning_rate]*len(log_data)
+    log_data["regularization_beta"] = [reg_beta]*len(log_data)
+    log_data["test_results"] = test_results
     log_data.to_csv("{0}/returns.csv".format(log_dir))

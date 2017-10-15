@@ -29,7 +29,6 @@ class CBTfTwoLayerNet(object):
                 a1 = tf.nn.relu(bn_input_1)
                 h1 = tf.nn.dropout(a1, self.keep_prob, noise_shape=[1, self.n_hidden_1])
             with tf.name_scope('layer_2'):
-                bn_input_2 = tf.layers.batch_normalization(h1)
                 W2 = tf.Variable(
                     tf.random_normal([self.n_hidden_1, self.n_hidden_2],
                                      stddev=np.sqrt(2.0 / self.n_hidden_1)), name='W2')
@@ -44,6 +43,7 @@ class CBTfTwoLayerNet(object):
                                      stddev=np.sqrt(2.0 / self.n_hidden_2)), name='W3')
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
                 self.Q = tf.add(tf.matmul(h2, W3), b3)
+                #self.Q = tf.nn.softmax(tf.add(tf.matmul(h2, W3), b3))
         with tf.name_scope('prediction_layer'):
             bn_input_p = tf.layers.batch_normalization(self.X)
             WP = tf.Variable(
@@ -92,10 +92,13 @@ class CBTfTwoLayerNet(object):
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
             self.targetActionMask = tf.placeholder(
                 tf.float32, [None, self.n_output])
+            logits = self.Q
             q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
                                      reduction_indices=[1])
+            negative_likelihoods = tf.nn.softmax_cross_entropy_with_logits(labels=self.targetActionMask, logits=logits)
+            weighted_negative_likelihoods = tf.multiply(negative_likelihoods, self.targetQ)
             self.qvalue_error = tf.reduce_mean(tf.square(tf.subtract(q_values, self.targetQ)))
-            self.policy_loss = (self.qvalue_error +
+            self.policy_loss = (tf.reduce_mean(weighted_negative_likelihoods) +
                                 self.beta * tf.reduce_sum(tf.square(W1)) +
                                 self.beta * tf.reduce_sum(tf.square(W2)) +
                                 self.beta * tf.reduce_sum(tf.square(W3)))
@@ -122,7 +125,7 @@ class CBTfTwoLayerNet(object):
 
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
-        grads, _ = tf.clip_by_global_norm(grads, 4.0)
+        grads, _ = tf.clip_by_global_norm(grads, 5.0)
 
         # Ask the optimizer to apply the capped gradients.
         grads_and_vars = list(zip(grads, self.var_list))
@@ -144,7 +147,7 @@ class CBTfTwoLayerNet(object):
             q_values = self.sess.run(self.Q, feed_dict={self.X: x,
                                                         self.keep_prob: 1.0})
         else:
-            feed_dict = {self.X: x}
+            feed_dict = {self.X: x, self.keep_prob: 1.0}
             feed_dict.update(zip(self.weights, weights))
             q_values = self.sess.run(self.Q, feed_dict=feed_dict)
         return q_values
@@ -152,7 +155,6 @@ class CBTfTwoLayerNet(object):
     def train(self, x, k_rew, x_next, targetQ, targetActionMask, no_tf_log):
         # Calculate next prediction, the modules encoding and the error of the last prediction
         # TODO: Optimize so the train step doesn't need to do a forward pass
-        # Calculate next prediction, the modules encoding and the error of the last prediction
         feed_dict = {self.X: x,
                      self.knowledge_reward: np.array(k_rew),
                      self.X_next: x_next,

@@ -7,19 +7,19 @@ import random
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
         super(Qlearner, self).__init__(name, env, log_dir)
-        self.model = CBTfTwoLayerNet(self.observation_space.shape[0],
+        self.model = CBTfTwoLayerNet(self.observation_space.shape[0]*2,
                                      self.action_space.n,
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.gamma = 0.9
+        self.gamma = 0.999
         self.tau = 0.01
-        self.random_action_prob = 0.5
-        self.random_action_decay = 0.999
+        self.random_action_prob = 0.1
+        self.random_action_decay = 1.0
         self.observations = []
         self.actions = []
         self.replay_memory = []
-        self.replay_memory_size = 200000
+        self.replay_memory_size = 1000000
         self.minibatch_size = 100
         self.old_weights = self.model.get_weights()
         self.target_update_freq = 100
@@ -36,9 +36,9 @@ class Qlearner(Agent):
                     competence_rewards):
         targets = np.zeros(self.minibatch_size)
         for i in range(self.minibatch_size):
-            targets[i] = r[i]
+            targets[i] = r[i] - base_q_values[i]
             if not done[i]:
-                targets[i] += (self.gamma*max_q_values[i] - base_q_values[i])
+                targets[i] += self.gamma*max_q_values[i]
         return targets
 
     def train(self, no_tf_log):
@@ -50,12 +50,12 @@ class Qlearner(Agent):
         done = [m[4] for m in data]
         targetActionMask = np.zeros(
                         (self.minibatch_size, self.action_space.n), dtype=int)
-        target_actions = self.model.predict(obs)
+        #target_actions = self.model.predict(obs)
         target_q_values = self.model.predict(obs, weights=self.old_weights)
-        baseline_q_values = self.model.predict(states, weights=self.old_weights)
-        max_q_values = [target_q_values[i][np.argmax(target_actions[i])]
+        baseline_q_values = self.model.predict(states)
+        max_q_values = [np.max(target_q_values[i])
                         for i in range(len(target_q_values))]
-        base_q_values = [baseline_q_values[i][np.argmax(target_actions[i])]
+        base_q_values = [baseline_q_values[i][a[i]]
                          for i in range(len(baseline_q_values))]
         knowledge_rewards = self.model.get_prediction_error(states,
                                                             obs)
@@ -81,13 +81,24 @@ class Qlearner(Agent):
                          targetActionMask,
                          no_tf_log)
 
-    def get_action(self, observation):
+    def get_action(self, observation, is_test=False):
         self.random_action_prob *= self.random_action_decay
         values = self.model.predict([observation])
-        if random.random() > self.random_action_prob:
-            return np.argmax(values)
-        else:
+        if random.random() < self.random_action_prob and not is_test:
             return self.action_space.sample()
+        else:
+            probs = np.exp(values)[0]
+            probs /= np.sum(probs)
+            r = random.random()
+            upto = 0
+            c = 0
+            for p in sorted(probs, reverse=True):
+                if p + upto > r:
+                    return c
+                else:
+                    upto += p
+                    c += 1
+            print("RRROORR")
 
 
 class KBQlearner(Qlearner):
