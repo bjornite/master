@@ -78,10 +78,11 @@ if __name__ == "__main__":
     actions = []
     test_results = []
     global_steps = 0
+    lr_update_step = agent.model.learning_rate * ((1.0/(args.num_rollouts*0.9)))
+    rp_update_step = agent.random_action_prob * ((1.0/(args.num_rollouts*0.9)))
     for i in range(args.num_rollouts):
         state = env.reset()
         action = env.action_space.sample()
-        actions.append(action)
         obs, r, done, _ = env.step(action)
         last_state = state
         state = obs
@@ -92,6 +93,10 @@ if __name__ == "__main__":
         totalr = 0.
         steps = 0
         mean_cb_r = 0
+        if agent.model.learning_rate > 1e-5:
+            agent.model.learning_rate -= lr_update_step
+        if agent.random_action_prob > 0:
+            agent.random_action_prob -= rp_update_step
         while not done:
             double_state = np.concatenate([last_state, state])
             action = agent.get_action(double_state)
@@ -120,7 +125,6 @@ if __name__ == "__main__":
                 agent.old_weights = current_weights
             if len(agent.replay_memory) > agent.minibatch_size:
                 mean_cb_r = agent.train(args.no_tf_log)
-        returns.append(totalr)
         if i % (args.num_rollouts / 100) == 0:
             totalr = 0.
             for j in range(num_test_runs):
@@ -142,10 +146,10 @@ if __name__ == "__main__":
                     totalr += r
                     env.render()
             test_results.append(totalr / num_test_runs)
-            print("iter {0}, reward: {1:.2f}, lr: {2}, beta: {3}".format(i,
-                                                                         totalr/num_test_runs,
-                                                                         learning_rate,
-                                                                         reg_beta))
+            print("iter {0}, reward: {1:.2f}, lr: {2}, rp: {3}".format(i,
+                                                                       totalr/num_test_runs,
+                                                                       agent.model.learning_rate,
+                                                                       agent.random_action_prob))
         else:
             test_results.append(None)
     agent.model.sess.close()

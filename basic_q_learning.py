@@ -14,13 +14,13 @@ class Qlearner(Agent):
                                      self.log_dir)
         self.gamma = 0.999
         self.tau = 0.01
-        self.random_action_prob = 0.1
+        self.random_action_prob = 0.9
         self.random_action_decay = 1.0
         self.observations = []
         self.actions = []
         self.replay_memory = []
         self.replay_memory_size = 1000000
-        self.minibatch_size = 100
+        self.minibatch_size = 1000
         self.old_weights = self.model.get_weights()
         self.target_update_freq = 100
         self.max_knowledge_reward = 0
@@ -31,12 +31,12 @@ class Qlearner(Agent):
                     r,
                     done,
                     max_q_values,
-                    base_q_values,
+                    # base_q_values,
                     knowledge_rewards,
                     competence_rewards):
         targets = np.zeros(self.minibatch_size)
         for i in range(self.minibatch_size):
-            targets[i] = r[i] - base_q_values[i]
+            targets[i] = r[i]  # - base_q_values[i]
             if not done[i]:
                 targets[i] += self.gamma*max_q_values[i]
         return targets
@@ -50,13 +50,13 @@ class Qlearner(Agent):
         done = [m[4] for m in data]
         targetActionMask = np.zeros(
                         (self.minibatch_size, self.action_space.n), dtype=int)
-        #target_actions = self.model.predict(obs)
+        target_actions = self.model.predict(obs)  # Double Q-learning
         target_q_values = self.model.predict(obs, weights=self.old_weights)
-        baseline_q_values = self.model.predict(states)
-        max_q_values = [np.max(target_q_values[i])
-                        for i in range(len(target_q_values))]
-        base_q_values = [baseline_q_values[i][a[i]]
-                         for i in range(len(baseline_q_values))]
+        # baseline_q_values = self.model.predict(states)
+        max_q_values = [target_q_values[i][np.argmax(target_actions[i])]
+                        for i in range(self.minibatch_size)]
+        # base_q_values = [baseline_q_values[i][a[i]]
+        #                 for i in range(len(baseline_q_values))]
         knowledge_rewards = self.model.get_prediction_error(states,
                                                             obs)
         max_knowledge_reward = np.max(knowledge_rewards)
@@ -71,7 +71,7 @@ class Qlearner(Agent):
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
-                                   base_q_values,
+                                   # base_q_values,
                                    knowledge_rewards,
                                    competence_rewards)
         self.model.train(states,
@@ -87,18 +87,7 @@ class Qlearner(Agent):
         if random.random() < self.random_action_prob and not is_test:
             return self.action_space.sample()
         else:
-            probs = np.exp(values)[0]
-            probs /= np.sum(probs)
-            r = random.random()
-            upto = 0
-            c = 0
-            for p in sorted(probs, reverse=True):
-                if p + upto > r:
-                    return c
-                else:
-                    upto += p
-                    c += 1
-            print("RRROORR")
+            return np.argmax(values[0])
 
 
 class KBQlearner(Qlearner):

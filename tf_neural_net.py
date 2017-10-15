@@ -6,7 +6,7 @@ class CBTfTwoLayerNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        self.keep_prob = tf.placeholder_with_default(0.5, shape=())
+        self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.n_hidden_1 = 128
         self.n_hidden_2 = 128
 
@@ -43,7 +43,6 @@ class CBTfTwoLayerNet(object):
                                      stddev=np.sqrt(2.0 / self.n_hidden_2)), name='W3')
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
                 self.Q = tf.add(tf.matmul(h2, W3), b3)
-                #self.Q = tf.nn.softmax(tf.add(tf.matmul(h2, W3), b3))
         with tf.name_scope('prediction_layer'):
             bn_input_p = tf.layers.batch_normalization(self.X)
             WP = tf.Variable(
@@ -92,13 +91,11 @@ class CBTfTwoLayerNet(object):
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
             self.targetActionMask = tf.placeholder(
                 tf.float32, [None, self.n_output])
-            logits = self.Q
             q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
                                      reduction_indices=[1])
-            negative_likelihoods = tf.nn.softmax_cross_entropy_with_logits(labels=self.targetActionMask, logits=logits)
-            weighted_negative_likelihoods = tf.multiply(negative_likelihoods, self.targetQ)
+
             self.qvalue_error = tf.reduce_mean(tf.square(tf.subtract(q_values, self.targetQ)))
-            self.policy_loss = (tf.reduce_mean(weighted_negative_likelihoods) +
+            self.policy_loss = (self.qvalue_error +
                                 self.beta * tf.reduce_sum(tf.square(W1)) +
                                 self.beta * tf.reduce_sum(tf.square(W2)) +
                                 self.beta * tf.reduce_sum(tf.square(W3)))
