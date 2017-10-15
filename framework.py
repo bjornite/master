@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import gym
-import universe
+#import universe
 
 
 def get_agent(name, env, log_dir, learning_rate, reg_beta):
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
 
-    num_test_runs=15
+    num_test_runs = 15
 
     print('Initializing agent')
     try:
@@ -105,6 +105,7 @@ if __name__ == "__main__":
             obs, r, done, _ = env.step(action)
             if done:
                 r = -1
+                obs = np.zeros(4)
             agent.replay_memory.append((double_state,
                                         action,
                                         np.concatenate([state, obs]),
@@ -120,9 +121,14 @@ if __name__ == "__main__":
                 env.render()
             if steps >= max_steps:
                 break
-            if agent.model.global_step % agent.target_update_freq == 0:
-                current_weights = agent.model.get_weights()
-                agent.old_weights = current_weights
+            current_weights = agent.model.get_weights()
+            count = 0
+            for w in agent.old_weights:
+                agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
+                                              np.multiply(current_weights[count], (1-0.999)))
+                if agent.old_weights[count].shape[0] == 1:
+                    agent.old_weights[count] = agent.old_weights[count].reshape([-1])
+                count += 1
             if len(agent.replay_memory) > agent.minibatch_size:
                 mean_cb_r = agent.train(args.no_tf_log)
         if i % (args.num_rollouts / 100) == 0:

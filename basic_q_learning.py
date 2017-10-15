@@ -3,7 +3,6 @@ from tf_neural_net import CBTfTwoLayerNet
 import numpy as np
 import random
 
-
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
         super(Qlearner, self).__init__(name, env, log_dir)
@@ -50,6 +49,8 @@ class Qlearner(Agent):
         done = [m[4] for m in data]
         targetActionMask = np.zeros(
                         (self.minibatch_size, self.action_space.n), dtype=int)
+        for i in range(self.minibatch_size):
+            targetActionMask[i][a[i]] = 1
         target_actions = self.model.predict(obs)  # Double Q-learning
         target_q_values = self.model.predict(obs, weights=self.old_weights)
         # baseline_q_values = self.model.predict(states)
@@ -58,16 +59,16 @@ class Qlearner(Agent):
         # base_q_values = [baseline_q_values[i][a[i]]
         #                 for i in range(len(baseline_q_values))]
         knowledge_rewards = self.model.get_prediction_error(states,
+                                                            targetActionMask,
                                                             obs)
         max_knowledge_reward = np.max(knowledge_rewards)
         if max_knowledge_reward > self.max_knowledge_reward:
             self.max_knowledge_reward = max_knowledge_reward
         normalized_knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
         competence_rewards = self.model.get_meta_prediction_error(states,
+                                                                  targetActionMask,
                                                                   normalized_knowledge_rewards,
                                                                   obs)
-        for i in range(self.minibatch_size):
-            targetActionMask[i][a[i]] = 1
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
@@ -96,13 +97,13 @@ class KBQlearner(Qlearner):
                     r,
                     done,
                     max_q_values,
-                    base_q_values,
+                    #base_q_values,
                     knowledge_rewards,
                     competence_rewards):
         targets = super(KBQlearner, self).make_reward(r,
                                                       done,
                                                       max_q_values,
-                                                      base_q_values,
+                                                      #base_q_values,
                                                       knowledge_rewards,
                                                       competence_rewards)
         max_knowledge_reward = np.max(knowledge_rewards)
@@ -119,13 +120,13 @@ class CBQlearner(Qlearner):
                     r,
                     done,
                     max_q_values,
-                    base_q_values,
+                    #base_q_values,
                     knowledge_rewards,
                     competence_rewards):
         targets = super(CBQlearner, self).make_reward(r,
                                                       done,
                                                       max_q_values,
-                                                      base_q_values,
+                                                      #base_q_values,
                                                       knowledge_rewards,
                                                       competence_rewards)
         max_competence_reward = np.max(competence_rewards)

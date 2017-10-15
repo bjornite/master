@@ -15,9 +15,10 @@ class CBTfTwoLayerNet(object):
         self.n_output = int(output_size)
         self.X = tf.placeholder("float", [None, self.n_input], name="state")
         self.X_next = tf.placeholder("float", [None, self.n_input], name="obs")
-        self.action = tf.placeholder("float", [None, self.n_output], name="action")
         self.knowledge_reward = tf.placeholder("float", [None], name="knowledge_reward")
-
+        self.targetActionMask = tf.placeholder(
+            tf.float32, [None, self.n_output])
+        
         with tf.name_scope('policy_network'):
             with tf.name_scope('layer_1'):
                 W1 = tf.Variable(
@@ -44,16 +45,16 @@ class CBTfTwoLayerNet(object):
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
                 self.Q = tf.add(tf.matmul(h2, W3), b3)
         with tf.name_scope('prediction_layer'):
-            bn_input_p = tf.layers.batch_normalization(self.X)
+            bn_input_p = tf.layers.batch_normalization(tf.concat([self.X, self.targetActionMask], axis=1))
             WP = tf.Variable(
-                tf.random_normal([self.n_input, self.n_input],
+                tf.random_normal([self.n_input + self.n_output, self.n_input],
                                  stddev=np.sqrt(2.0 / self.n_input)), name='WP')
             bP = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP')
             self.prediction = tf.add(tf.matmul(bn_input_p, WP), bP)
         with tf.name_scope('error_prediction_layer'):
-            bn_input_ep = tf.layers.batch_normalization(self.X)
+            bn_input_ep = tf.layers.batch_normalization(tf.concat([self.X, self.targetActionMask], axis=1))
             WEP = tf.Variable(
-                tf.random_normal([self.n_input, 1],
+                tf.random_normal([self.n_input + self.n_output, 1],
                                  stddev=np.sqrt(2.0 / self.n_input)), name='WEP')
             bEP = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP')
             self.error_prediction = tf.add(tf.matmul(bn_input_ep, WEP), bEP)
@@ -89,8 +90,7 @@ class CBTfTwoLayerNet(object):
         with tf.name_scope('policy_loss'):
             # Loss
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
-            self.targetActionMask = tf.placeholder(
-                tf.float32, [None, self.n_output])
+
             q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
                                      reduction_indices=[1])
 
@@ -165,14 +165,16 @@ class CBTfTwoLayerNet(object):
             self.train_writer.add_summary(summary, global_step)
         return
 
-    def get_prediction_error(self, x, x_next):
+    def get_prediction_error(self, x, a, x_next):
         feed_dict = {self.X: x,
+                     self.targetActionMask: a,
                      self.X_next: x_next}
         return self.sess.run(self.pred_error,
                              feed_dict=feed_dict)
 
-    def get_meta_prediction_error(self, x, knowledge_rewards, x_next):
+    def get_meta_prediction_error(self, x, a, knowledge_rewards, x_next):
         feed_dict = {self.X: x,
+                     self.targetActionMask: a,
                      self.knowledge_reward: np.array(knowledge_rewards),
                      self.X_next: x_next}
         return self.sess.run(self.error_prediction_error,
