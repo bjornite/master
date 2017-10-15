@@ -14,7 +14,7 @@ import pandas as pd
 import seaborn as sns
 import gym
 #import universe
-
+import git
 
 def get_agent(name, env, log_dir, learning_rate, reg_beta):
     if name == "Qlearner":
@@ -36,6 +36,9 @@ if __name__ == "__main__":
     # Run through testing regime, specify simulations and number of runs per
     # simulation
 
+    repo = git.Repo(search_parent_directories=True)
+    label = repo.head.object.hexsha
+    print label
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('agentname', type=str)
@@ -57,6 +60,8 @@ if __name__ == "__main__":
         pass
     copyfile("tf_neural_net.py", "{}/tf_neural_net.py".format(log_dir))
     copyfile("basic_q_learning.py", "{}/basic_q_learning.py".format(log_dir))
+    with open('{}/code_version.txt'.format(log_dir), 'w') as f:
+        f.write(label)
 
     returns = []
     env = gym.make(args.envname)
