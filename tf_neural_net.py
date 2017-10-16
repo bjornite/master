@@ -18,7 +18,7 @@ class CBTfTwoLayerNet(object):
         self.knowledge_reward = tf.placeholder("float", [None], name="knowledge_reward")
         self.targetActionMask = tf.placeholder(
             tf.float32, [None, self.n_output])
-        
+
         with tf.name_scope('policy_network'):
             with tf.name_scope('layer_1'):
                 W1 = tf.Variable(

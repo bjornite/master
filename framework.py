@@ -37,7 +37,7 @@ if __name__ == "__main__":
     # simulation
 
     repo = git.Repo(search_parent_directories=True)
-    label = repo.head.object.hexsha
+    label = repo.head.object.hexsha + "\n" + repo.head.object.message
     print label
     import argparse
     parser = argparse.ArgumentParser()
@@ -58,8 +58,6 @@ if __name__ == "__main__":
         os.mkdir(log_dir)
     except:
         pass
-    copyfile("tf_neural_net.py", "{}/tf_neural_net.py".format(log_dir))
-    copyfile("basic_q_learning.py", "{}/basic_q_learning.py".format(log_dir))
     with open('{}/code_version.txt'.format(log_dir), 'w') as f:
         f.write(label)
 
@@ -112,7 +110,7 @@ if __name__ == "__main__":
             obs, r, done, _ = env.step(action)
             if done:
                 r = -1
-                obs = np.zeros(4)
+                obs = np.zeros(env.observation_space.shape[0])
             agent.replay_memory.append((double_state,
                                         action,
                                         np.concatenate([state, obs]),
@@ -137,7 +135,8 @@ if __name__ == "__main__":
                     agent.old_weights[count] = agent.old_weights[count].reshape([-1])
                 count += 1
             if len(agent.replay_memory) > agent.minibatch_size:
-                mean_cb_r = agent.train(args.no_tf_log)
+                agent.train(args.no_tf_log)
+        returns.append(totalr)
         if i % (args.num_rollouts / 100) == 0:
             totalr = 0.
             for j in range(num_test_runs):

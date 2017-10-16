@@ -31,12 +31,12 @@ if __name__=="__main__":
                         if file == "returns.csv":
                             s = pd.read_csv(os.path.join(log_dir, dir, file),
                                             header=None,
-                                            names=["iteration", "return", "agent", "env", "learning_rate", "regularization_beta"],
+                                            names=["iteration", "return", "agent", "env", "learning_rate", "regularization_beta", "test_results"],
                                             skiprows=1)
                             s["run"] = [counter] * len(s)
                             series_dict[counter] = s
                             counter += 1
 
     df = pd.concat(series_dict, ignore_index=True)
-    sns.tsplot(data=df, time="iteration", value="return", condition=args.condition, unit="run")
+    sns.tsplot(data=df, time="iteration", value="test_results", condition=args.condition, unit="run")
     plt.show()
