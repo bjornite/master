@@ -85,7 +85,7 @@ class Qlearner(Agent):
     def get_action(self, observation, is_test=False):
         self.random_action_prob *= self.random_action_decay
         values = self.model.predict([observation])
-        if random.random() < self.random_action_prob and not is_test:
+        if random.random() < self.random_action_prob/4 and not is_test:
             return self.action_space.sample()
         else:
             return np.argmax(values[0])
@@ -113,6 +113,12 @@ class KBQlearner(Qlearner):
             targets[i] += knowledge_rewards[i]
         return targets
 
+    def get_action(self, observation, is_test=False):
+        values = self.model.predict([observation])
+        if random.random() < self.random_action_prob/4 and not is_test:
+            return self.action_space.sample()
+        else:
+            return np.argmax(values[0])
 
 class IKBQlearner(Qlearner):
 
@@ -136,6 +142,12 @@ class IKBQlearner(Qlearner):
             targets[i] -= knowledge_rewards[i]
         return targets
 
+    def get_action(self, observation, is_test=False):
+        values = self.model.predict([observation])
+        if random.random() < self.random_action_prob/4 and not is_test:
+            return self.action_space.sample()
+        else:
+            return np.argmax(values[0])
 
 class CBQlearner(Qlearner):
 
@@ -156,8 +168,8 @@ class CBQlearner(Qlearner):
         if max_competence_reward > 1:
             competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(self.minibatch_size):
-            if competence_rewards[i] > self.improvement_threshold:
-                targets[i] += competence_rewards[i] * self.random_action_prob
+            if competence_rewards[i]:
+                targets[i] += competence_rewards[i]
         return targets
 
     def get_action(self, observation, is_test=False):

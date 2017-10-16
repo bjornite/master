@@ -37,6 +37,12 @@ if __name__=="__main__":
                             series_dict[counter] = s
                             counter += 1
 
-    df = pd.concat(series_dict, ignore_index=True)
-    sns.tsplot(data=df, time="iteration", value="test_results", condition=args.condition, unit="run")
+    df = pd.concat(series_dict, ignore_index=True).dropna()
+    sns.tsplot(data=df,
+               time="iteration",
+               value="test_results",
+               condition=args.condition,
+               unit="run",
+               # err_style="unit_traces",
+               estimator=np.average)
     plt.show()

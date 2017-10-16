@@ -64,7 +64,7 @@ if __name__ == "__main__":
     returns = []
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
-
+    max_score = 497
     num_test_runs = 15
 
     print('Initializing agent')
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     global_steps = 0
     lr_update_step = agent.model.learning_rate * ((1.0/(args.num_rollouts*0.9)))
     rp_update_step = agent.random_action_prob * ((1.0/(args.num_rollouts*0.9)))
+    stop_training = False
     for i in range(args.num_rollouts):
         state = env.reset()
         action = env.action_space.sample()
@@ -105,6 +106,7 @@ if __name__ == "__main__":
         while not done:
             double_state = np.concatenate([last_state, state])
             action = agent.get_action(double_state)
+            log_action = action
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
@@ -112,7 +114,7 @@ if __name__ == "__main__":
                 r = -1
                 obs = np.zeros(env.observation_space.shape[0])
             agent.replay_memory.append((double_state,
-                                        action,
+                                        log_action,
                                         np.concatenate([state, obs]),
                                         r,
                                         done))
@@ -134,7 +136,7 @@ if __name__ == "__main__":
                 if agent.old_weights[count].shape[0] == 1:
                     agent.old_weights[count] = agent.old_weights[count].reshape([-1])
                 count += 1
-            if len(agent.replay_memory) > agent.minibatch_size:
+            if len(agent.replay_memory) > agent.minibatch_size and not stop_training:
                 agent.train(args.no_tf_log)
         returns.append(totalr)
         if i % (args.num_rollouts / 100) == 0:
@@ -157,7 +159,10 @@ if __name__ == "__main__":
                     state = obs
                     totalr += r
                     env.render()
-            test_results.append(totalr / num_test_runs)
+            test_returns = totalr / num_test_runs
+            #if test_returns == max_score:
+                #stop_training = True
+            test_results.append(test_returns)
             print("iter {0}, reward: {1:.2f}, lr: {2}, rp: {3}".format(i,
                                                                        totalr/num_test_runs,
                                                                        agent.model.learning_rate,
