@@ -118,22 +118,23 @@ class CBTfTwoLayerNet(object):
             # Loss
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
 
-            q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
+            self.q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
                                      reduction_indices=[1])
 
-            self.qvalue_error = tf.reduce_mean(tf.square(tf.subtract(q_values, self.targetQ)))
+            self.qvalue_error = tf.reduce_mean(tf.square(tf.subtract(self.q_values, self.targetQ)))
             self.policy_loss = (self.qvalue_error +
                                 self.beta * tf.reduce_sum(tf.square(W1)) +
                                 self.beta * tf.reduce_sum(tf.square(W2)) +
                                 self.beta * tf.reduce_sum(tf.square(W3)))
-        for w in range(len(self.weights)):
-            tf.summary.histogram(self.weightnames[w], self.weights[w])
-        tf.summary.histogram('meta_error_prediction', self.error_prediction_error)
-        tf.summary.histogram('pred_error', self.pred_error)
+        #for w in range(len(self.weights)):
+        #    tf.summary.histogram(self.weightnames[w], self.weights[w])
+        #tf.summary.histogram('meta_error_prediction', self.error_prediction_error)
+        #tf.summary.histogram('pred_error', self.pred_error)
         tf.summary.scalar('mean_meta_error', self.error_prediction_loss)
         tf.summary.scalar('mean qvalue_error', self.qvalue_error)
         tf.summary.scalar('mean_policy_loss', self.policy_loss)
         tf.summary.scalar('mean_pred_error', self.pred_loss)
+        tf.summary.scalar('mean_q_value', tf.reduce_mean(self.q_values))
 
         with tf.name_scope('loss'):
             self.loss = (self.policy_loss +
