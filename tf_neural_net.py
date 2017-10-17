@@ -158,7 +158,7 @@ class CBTfTwoLayerNet(object):
 
         init = tf.global_variables_initializer()
         config = tf.ConfigProto(
-            device_count={'GPU': 0}
+             device_count={'GPU': 1}
         )
         self.sess = tf.Session(config=config)
         self.train_writer = tf.summary.FileWriter(log_dir,

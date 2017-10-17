@@ -156,7 +156,8 @@ if __name__ == "__main__":
                     last_state = state
                     state = obs
                     totalr += r
-                    env.render()
+                    if args.render:
+                        env.render()
             test_results.append(totalr / num_test_runs)
             print("iter {0}, reward: {1:.2f}, lr: {2}, rp: {3}".format(i,
                                                                        totalr/num_test_runs,
