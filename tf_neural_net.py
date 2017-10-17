@@ -44,31 +44,56 @@ class CBTfTwoLayerNet(object):
                                      stddev=np.sqrt(2.0 / self.n_hidden_2)), name='W3')
                 b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
                 self.Q = tf.add(tf.matmul(h2, W3), b3)
-        with tf.name_scope('prediction_layer'):
-            bn_input_p = tf.layers.batch_normalization(tf.concat([self.X, self.targetActionMask], axis=1))
-            WP = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, self.n_input],
-                                 stddev=np.sqrt(2.0 / self.n_input)), name='WP')
-            bP = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP')
-            self.prediction = tf.add(tf.matmul(bn_input_p, WP), bP)
-        with tf.name_scope('error_prediction_layer'):
-            bn_input_ep = tf.layers.batch_normalization(tf.concat([self.X, self.targetActionMask], axis=1))
-            WEP = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, 1],
-                                 stddev=np.sqrt(2.0 / self.n_input)), name='WEP')
-            bEP = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP')
-            self.error_prediction = tf.add(tf.matmul(bn_input_ep, WEP), bEP)
+        with tf.name_scope('prediction_module'):
+            pred_h_size = 64
+            WP1 = tf.Variable(
+                tf.random_normal([self.n_input + self.n_output, pred_h_size],
+                                 stddev=np.sqrt(2.0 / self.n_input)), name='WP1')
+            bP1 = tf.Variable(tf.constant(0.1, shape=[pred_h_size]), name='bP1')
+            bPz1 = tf.add(tf.matmul(tf.concat([self.X, self.targetActionMask], axis=1),
+                                    WP1),
+                          bP1)
+            bn_input_p = tf.layers.batch_normalization(bPz1)
+            bPa1 = tf.nn.relu(bn_input_p)
+            bPh1 = tf.nn.dropout(bPa1, self.keep_prob, noise_shape=[1, pred_h_size])
+            WP2 = tf.Variable(
+                tf.random_normal([pred_h_size, self.n_input],
+                                 stddev=np.sqrt(2.0 / pred_h_size)), name='WP2')
+            bP2 = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP2')
+            self.prediction = tf.add(tf.matmul(bPh1, WP2), bP2)
+        with tf.name_scope('error_prediction_module'):
+            err_pred_h_size = 64
+            WEP1 = tf.Variable(
+                tf.random_normal([self.n_input + self.n_output, err_pred_h_size],
+                                 stddev=np.sqrt(2.0 / self.n_input)), name='WEP1')
+            bEP1 = tf.Variable(tf.constant(0.1, shape=[pred_h_size]), name='bEP1')
+            bEPz1 = tf.add(tf.matmul(tf.concat([self.X, self.targetActionMask], axis=1),
+                                     WEP1),
+                           bEP1)
+            bn_input_ep = tf.layers.batch_normalization(bEPz1)
+            bEPa1 = tf.nn.relu(bn_input_ep)
+            bEPh1 = tf.nn.dropout(bEPa1, self.keep_prob, noise_shape=[1, err_pred_h_size])
+            WEP2 = tf.Variable(
+                tf.random_normal([pred_h_size, 1],
+                                 stddev=np.sqrt(2.0 / pred_h_size)), name='WEP2')
+            bEP2 = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP2')
+            self.error_prediction = tf.add(tf.matmul(bEPh1, WEP2), bEP2)
 
         self.weightnames = ["W1", "b1",
                             "W2", "b2",
                             "W3", "b3",
-                            "WP", "bP",
-                            "WEP", "bEP"]
+                            "WP1", "bP1",
+                            "WP2", "bP2",                            
+                            "WEP1", "bEP1",
+                            "WEP2", "bEP2",
+        ]
         self.weights = [W1, b1,
                         W2, b2,
                         W3, b3,
-                        WP, bP,
-                        WEP, bEP]
+                        WP1, bP1,
+                        WP2, bP2,                        
+                        WEP1, bEP1,
+                        WEP2, bEP2]
 
         with tf.name_scope('prediction_loss'):
             # Prediction loss
@@ -78,7 +103,8 @@ class CBTfTwoLayerNet(object):
             #                            tf.reduce_max(unnormalized_pred_error, axis=[0]))
             self.pred_loss = tf.reduce_mean(self.pred_error)
             self.pred_loss_regularized = (self.pred_loss +
-                                          self.beta * tf.reduce_sum(tf.square(WP)))
+                                          self.beta * tf.reduce_sum(tf.square(WP1)) +
+                                          self.beta * tf.reduce_sum(tf.square(WP2)))
         with tf.name_scope('error_prediction_loss'):
             # TODO: Figure out how to normalize this, get huge (and negative) values
             self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
@@ -86,7 +112,8 @@ class CBTfTwoLayerNet(object):
                                                         reduction_indices=[1])
             self.error_prediction_loss = tf.reduce_mean(self.error_prediction_error)
             self.error_prediction_loss_regularized = (tf.abs(self.error_prediction_loss) +
-                                                      self.beta * tf.reduce_sum(tf.square(WEP)))
+                                                      self.beta * tf.reduce_sum(tf.square(WEP1)) +
+                                                      self.beta * tf.reduce_sum(tf.square(WEP2)))
         with tf.name_scope('policy_loss'):
             # Loss
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
