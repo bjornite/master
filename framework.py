@@ -158,11 +158,9 @@ if __name__ == "__main__":
                     last_state = state
                     state = obs
                     totalr += r
-                    env.render()
-            test_returns = totalr / num_test_runs
-            #if test_returns == max_score:
-                #stop_training = True
-            test_results.append(test_returns)
+                    if args.render:
+                        env.render()
+            test_results.append(totalr / num_test_runs)
             print("iter {0}, reward: {1:.2f}, lr: {2}, rp: {3}".format(i,
                                                                        totalr/num_test_runs,
                                                                        agent.model.learning_rate,
