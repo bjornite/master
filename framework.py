@@ -112,7 +112,7 @@ if __name__ == "__main__":
             obs, r, done, _ = env.step(action)
             if done:
                 r = -1
-                obs = np.zeros(env.observation_space.shape[0])
+                # obs = np.zeros(env.observation_space.shape[0])
             agent.replay_memory.append((double_state,
                                         log_action,
                                         np.concatenate([state, obs]),

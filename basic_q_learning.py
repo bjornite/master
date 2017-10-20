@@ -2,6 +2,7 @@ from Agent import Agent
 from tf_neural_net import CBTfTwoLayerNet
 import numpy as np
 import random
+import copy
 
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
@@ -107,8 +108,7 @@ class KBQlearner(Qlearner):
                                                       knowledge_rewards,
                                                       competence_rewards)
         max_knowledge_reward = np.max(knowledge_rewards)
-        if max_knowledge_reward > 1:
-            knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(self.minibatch_size):
             targets[i] += knowledge_rewards[i]
         return targets
@@ -136,8 +136,7 @@ class IKBQlearner(Qlearner):
                                                       knowledge_rewards,
                                                       competence_rewards)
         max_knowledge_reward = np.max(knowledge_rewards)
-        if max_knowledge_reward > 1:
-            knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(self.minibatch_size):
             targets[i] -= knowledge_rewards[i]
         return targets
@@ -164,11 +163,11 @@ class CBQlearner(Qlearner):
                                                       #base_q_values,
                                                       knowledge_rewards,
                                                       competence_rewards)
-        max_competence_reward = np.max(competence_rewards)
-        if max_competence_reward > 1:
-            competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
+        cp_comprew = copy.copy(competence_rewards)
+        max_competence_reward = np.max(np.abs(cp_comprew))
+        competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(self.minibatch_size):
-            if competence_rewards[i]:
+            if competence_rewards[i] > 0:
                 targets[i] += competence_rewards[i]
         return targets
 

@@ -11,13 +11,13 @@ DEFAULT_NUM_RUNS = 5
 RUN_FILE = "framework.py"
 LOG_DIR_ROOT = "tests"
 agents = [
-    # "Qlearner",
-    # "KBQlearner",
-    # "IKBQlearner",
+    "Qlearner",
+    "KBQlearner",
+    "IKBQlearner",
     "CBQlearner"]
 env = "CartPole-v1"
 DEFAULT_NUM_ROLLOUTS = 1000
-DEFAULT_NUM_WORKERS = 7
+DEFAULT_NUM_WORKERS = 1
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_runs', type=int, default=DEFAULT_NUM_RUNS)
@@ -35,7 +35,7 @@ start_datetime = parse_time_string(start_time)
 
 commands = []
 
-log_dir = "standard2"
+log_dir = "standard3"
 try:
     os.mkdir(log_dir)
 except:
@@ -51,7 +51,7 @@ for i in range(args.num_runs):
                 args.num_rollouts,
                 log_tf))
 
-log_dir = "tests2"
+log_dir = "random3"
 try:
     os.mkdir(log_dir)
 except:

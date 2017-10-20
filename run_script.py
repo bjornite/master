@@ -23,6 +23,7 @@ parser.add_argument('--render', action='store_true')
 parser.add_argument("--max_timesteps", type=int)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_LEARNING_RATE)
+parser.add_argument('--log_dir', type=str, default=LOG_DIR_ROOT)
 parser.add_argument('--log_tf', action='store_true')
 parser.add_argument('--num_workers', type=int, default=DEFAULT_NUM_WORKERS)
 args = parser.parse_args()
@@ -32,6 +33,10 @@ start_datetime = parse_time_string(start_time)
 log_tf = "--no_tf_log"
 if args.log_tf:
     log_tf = ""
+try:
+    os.mkdir(args.log_dir)
+except:
+    pass
 
 commands = []
 
