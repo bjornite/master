@@ -181,15 +181,14 @@ class CBQlearner(Qlearner):
 class SAQlearner(Qlearner):
 
     def get_action(self, s):
-        uncertainties = {}
-        for a in self.action_space():
+        uncertainties = []
+        for a in range(self.action_space.n):
             uncertainties[a] = self.model.get_prediction_uncertainty(s, a)
         # Sort uncertainties
         self.random_action_prob *= self.random_action_decay
-        values = self.model.predict([observation])
         if random.random() > self.random_action_prob:
             # Return action causing median uncertainty
-            return np.argmax(values)
+            return np.argmax(uncertainties)
         else:
             return self.action_space.sample()
 

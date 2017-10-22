@@ -177,6 +177,25 @@ class CBTfTwoLayerNet(object):
             q_values = self.sess.run(self.Q, feed_dict=feed_dict)
         return q_values
 
+    def get_q_value_uncertainty(self, x):
+        # Calculate prediction and ecoding
+        q_values = []
+        for i in range(10):
+            q_values[i] = self.sess.run(self.Q, feed_dict={self.X: x,
+                                                           self.keep_prob: 0.8})
+        return np.std(q_values, axis=0)
+
+    def get_prediction_uncertainty(self, x, a):
+        # Calculate prediction and ecoding
+        predictions = []
+        act = np.zeros(self.n_output)
+        act[a] = 1
+        for i in range(10):
+            predictions[i] = self.sess.run(self.prediction, feed_dict={self.X: x,
+                                                                       self.targetActionMask: act,
+                                                                       self.keep_prob: 0.8})
+        return np.std(predictions, axis=0)
+
     def train(self, x, k_rew, x_next, targetQ, targetActionMask, no_tf_log):
         # Calculate next prediction, the modules encoding and the error of the last prediction
         # TODO: Optimize so the train step doesn't need to do a forward pass
