@@ -7,7 +7,7 @@ import datetime
 import time
 import os
 from shutil import copyfile
-from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner
+from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -25,6 +25,14 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return IKBQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "CBQlearner":
         return CBQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "SAQlearner":
+        return SAQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "ISAQlearner":
+        return ISAQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "MSAQlearner":
+        return MSAQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "IMSAQlearner":
+        return IMSAQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "Random_agent":
         return Random_agent(name, env, log_dir)
     else:

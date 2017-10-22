@@ -26,6 +26,7 @@ class Qlearner(Agent):
         self.max_knowledge_reward = 0
         self.max_competence_reward = 0
         self.improvement_threshold = 0.2
+        self.moving_average_uncertainties = 0
 
     def make_reward(self,
                     r,
@@ -114,10 +115,10 @@ class KBQlearner(Qlearner):
         return targets
 
     def get_action(self, observation, is_test=False):
-        values = self.model.predict([observation])
         if random.random() < self.random_action_prob/4 and not is_test:
             return self.action_space.sample()
         else:
+            values = self.model.predict([observation])
             return np.argmax(values[0])
 
 class IKBQlearner(Qlearner):
@@ -142,10 +143,10 @@ class IKBQlearner(Qlearner):
         return targets
 
     def get_action(self, observation, is_test=False):
-        values = self.model.predict([observation])
         if random.random() < self.random_action_prob/4 and not is_test:
             return self.action_space.sample()
         else:
+            values = self.model.predict([observation])
             return np.argmax(values[0])
 
 class CBQlearner(Qlearner):
@@ -172,26 +173,70 @@ class CBQlearner(Qlearner):
         return targets
 
     def get_action(self, observation, is_test=False):
-        values = self.model.predict([observation])
         if random.random() < self.random_action_prob/4 and not is_test:
             return self.action_space.sample()
         else:
+            values = self.model.predict([observation])
             return np.argmax(values[0])
 
 class SAQlearner(Qlearner):
 
-    def get_action(self, s):
-        uncertainties = []
-        for a in range(self.action_space.n):
-            uncertainties[a] = self.model.get_prediction_uncertainty(s, a)
-        # Sort uncertainties
-        self.random_action_prob *= self.random_action_decay
-        if random.random() > self.random_action_prob:
-            # Return action causing median uncertainty
+    def get_action(self, observation, is_test=False):
+        if random.random() < self.random_action_prob/4 and not is_test:
+            # Return action causing maximum uncertainty
+            uncertainties = np.zeros(self.action_space.n)
+            for a in range(self.action_space.n):
+                uncertainties[a] = self.model.get_prediction_uncertainty(observation, a)
             return np.argmax(uncertainties)
         else:
-            return self.action_space.sample()
+            values = self.model.predict([observation])
+            return np.argmax(values[0])
+
+class ISAQlearner(Qlearner):
+
+    def get_action(self, observation, is_test=False):
+        if random.random() < self.random_action_prob/4 and not is_test:
+            # Return action causing minimum uncertainty
+            uncertainties = np.zeros(self.action_space.n)
+            for a in range(self.action_space.n):
+                uncertainties[a] = self.model.get_prediction_uncertainty(observation, a)
+            return np.argmin(uncertainties)
+        else:
+            values = self.model.predict([observation])
+            return np.argmax(values[0])
+
+class MSAQlearner(Qlearner):
+
+    def get_action(self, observation, is_test=False):
+        if random.random() < self.random_action_prob/4 and not is_test:
+            # Return action causing average uncertainty
+            uncertainties = np.zeros(self.action_space.n)
+            for a in range(self.action_space.n):
+                uncertainties[a] = self.model.get_prediction_uncertainty(observation, a)
+            self.moving_average_uncertainties = (0.99 * self.moving_average_uncertainties
+            + (1-0.99) * np.mean(uncertainties))
+            uncertainties = np.abs(uncertainties - [self.moving_average_uncertainties])
+            return np.argmin(uncertainties)
+        else:
+            values = self.model.predict([observation])
+            return np.argmax(values[0])
+
+class IMSAQlearner(Qlearner):
+
+    def get_action(self, observation, is_test=False):
+        if random.random() < self.random_action_prob/4 and not is_test:
+            # Return action causing average uncertainty
+            uncertainties = np.zeros(self.action_space.n)
+            for a in range(self.action_space.n):
+                uncertainties[a] = self.model.get_prediction_uncertainty(observation, a)
+            self.moving_average_uncertainties = (0.99 * self.moving_average_uncertainties
+            + (1-0.99) * np.mean(uncertainties))
+            uncertainties = np.abs(uncertainties - [self.moving_average_uncertainties])
+            return np.argmax(uncertainties)
+        else:
+            values = self.model.predict([observation])
+            return np.argmax(values[0])
 
 class Random_agent(Agent):
-    def get_action(self, input):
+    def get_action(self, input, is_test=False):
         return self.action_space.sample()

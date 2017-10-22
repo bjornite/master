@@ -11,10 +11,14 @@ DEFAULT_NUM_RUNS = 5
 RUN_FILE = "framework.py"
 LOG_DIR_ROOT = "tests"
 agents = [
-    "Qlearner",
-    "KBQlearner",
-    "IKBQlearner",
-    "CBQlearner"]
+    #"Qlearner",
+    #"KBQlearner",
+    #"IKBQlearner",
+    #"CBQlearner",
+    "SAQlearner",
+    "ISAQlearner",
+    "MSAQlearner",
+    "IMSAQlearner"]
 env = "CartPole-v1"
 DEFAULT_NUM_ROLLOUTS = 1000
 DEFAULT_NUM_WORKERS = 1
@@ -35,7 +39,7 @@ start_datetime = parse_time_string(start_time)
 
 commands = []
 
-log_dir = "standard3"
+log_dir = "standard_SAQ"
 try:
     os.mkdir(log_dir)
 except:
@@ -51,7 +55,7 @@ for i in range(args.num_runs):
                 args.num_rollouts,
                 log_tf))
 
-log_dir = "random3"
+log_dir = "random_SAQ"
 try:
     os.mkdir(log_dir)
 except:

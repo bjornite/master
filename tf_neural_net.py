@@ -187,14 +187,15 @@ class CBTfTwoLayerNet(object):
 
     def get_prediction_uncertainty(self, x, a):
         # Calculate prediction and ecoding
+        num_preds = 10
         predictions = []
         act = np.zeros(self.n_output)
         act[a] = 1
-        for i in range(10):
-            predictions[i] = self.sess.run(self.prediction, feed_dict={self.X: x,
-                                                                       self.targetActionMask: act,
-                                                                       self.keep_prob: 0.8})
-        return np.std(predictions, axis=0)
+        for i in range(num_preds):
+            predictions.append(self.sess.run(self.prediction, feed_dict={self.X: [x],
+                                                                         self.targetActionMask: [act],
+                                                                         self.keep_prob: 0.8}))
+        return np.mean(np.std(predictions, axis=0))
 
     def train(self, x, k_rew, x_next, targetQ, targetActionMask, no_tf_log):
         # Calculate next prediction, the modules encoding and the error of the last prediction
