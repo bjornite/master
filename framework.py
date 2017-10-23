@@ -161,7 +161,7 @@ if __name__ == "__main__":
                     if args.random_cartpole and (state[0] > 0.2):
                         action = env.action_space.sample()
                     obs, r, done, _ = env.step(action)
-                    if done:
+                    if done and args.envname[:8] == "CartPole":
                         r = -1
                     last_state = state
                     state = obs
