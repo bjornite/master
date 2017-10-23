@@ -13,7 +13,7 @@ if __name__=="__main__":
     parser.add_argument('log_dir', type=str)
     parser.add_argument('--condition', type=str, default="agent")
     parser.add_argument('--envname', type=str, default="CartPole-v1")
-    parser.add_argument('--agentname', type=str, default="")
+    parser.add_argument('--agentname', type=str, nargs="*", default=[])
     parser.add_argument('--datetime_low', type=str, default="")
     parser.add_argument('--datetime_high', type=str, default=get_time_string())
     args = parser.parse_args()
@@ -38,7 +38,7 @@ if __name__=="__main__":
                             counter += 1
 
     df = pd.concat(series_dict, ignore_index=True).dropna()
-    if args.agentname != "":
+    if args.agentname != []:
         df = df.loc[df['agent'].isin(args.agentname)]
     sns.tsplot(data=df,
                time="iteration",
