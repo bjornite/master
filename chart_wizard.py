@@ -39,7 +39,7 @@ if __name__=="__main__":
 
     df = pd.concat(series_dict, ignore_index=True).dropna()
     if args.agentname != "":
-        df = df.loc[df['agent'] == args.agentname]
+        df = df.loc[df['agent'].isin(args.agentname)]
     sns.tsplot(data=df,
                time="iteration",
                value="test_results",
