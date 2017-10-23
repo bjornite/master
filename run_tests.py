@@ -71,7 +71,7 @@ for i in range(args.num_runs):
 #                 args.num_rollouts,
 #                 log_tf))
 
-# pool = Pool(args.num_workers)  # two concurrent commands at a time
-# for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):
-#     if returncode != 0:
-#         print("%d command failed: %d" % (i, returncode))
+pool = Pool(args.num_workers)  # two concurrent commands at a time
+for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):
+    if returncode != 0:
+        print("%d command failed: %d" % (i, returncode))
