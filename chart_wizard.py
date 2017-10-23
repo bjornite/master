@@ -45,6 +45,6 @@ if __name__=="__main__":
                value="test_results",
                condition=args.condition,
                unit="run",
-               # err_style="unit_traces",
+               err_style="unit_traces",
                estimator=np.average)
     plt.show()
