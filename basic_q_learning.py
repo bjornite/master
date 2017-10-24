@@ -15,7 +15,7 @@ class Qlearner(Agent):
         self.gamma = 0.999
         self.tau = 0.01
         self.random_action_prob = 0.9
-        self.random_action_decay = 1.0
+        self.random_action_decay = 0.99995
         self.observations = []
         self.actions = []
         self.replay_memory = []
@@ -55,11 +55,10 @@ class Qlearner(Agent):
             targetActionMask[i][a[i]] = 1
         target_actions = self.model.predict(obs)  # Double Q-learning
         target_q_values = self.model.predict(obs, weights=self.old_weights)
-        # baseline_q_values = self.model.predict(states)
+
         max_q_values = [target_q_values[i][np.argmax(target_actions[i])]
                         for i in range(self.minibatch_size)]
-        # base_q_values = [baseline_q_values[i][a[i]]
-        #                 for i in range(len(baseline_q_values))]
+
         knowledge_rewards = self.model.get_prediction_error(states,
                                                             targetActionMask,
                                                             obs)
@@ -77,6 +76,8 @@ class Qlearner(Agent):
                                    # base_q_values,
                                    knowledge_rewards,
                                    competence_rewards)
+        #self.model.learning_rate *= 0.99995 # Converges in roughly 200000 steps
+        self.random_action_prob *= self.random_action_decay
         self.model.train(states,
                          normalized_knowledge_rewards,
                          obs,
@@ -85,11 +86,10 @@ class Qlearner(Agent):
                          no_tf_log)
 
     def get_action(self, observation, is_test=False):
-        self.random_action_prob *= self.random_action_decay
-        values = self.model.predict([observation])
         if random.random() < self.random_action_prob/4 and not is_test:
             return self.action_space.sample()
         else:
+            values = self.model.predict([observation])
             return np.argmax(values[0])
 
 
@@ -114,13 +114,6 @@ class KBQlearner(Qlearner):
             targets[i] += knowledge_rewards[i]
         return targets
 
-    def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
-            return self.action_space.sample()
-        else:
-            values = self.model.predict([observation])
-            return np.argmax(values[0])
-
 class IKBQlearner(Qlearner):
 
     def make_reward(self,
@@ -141,13 +134,6 @@ class IKBQlearner(Qlearner):
         for i in range(self.minibatch_size):
             targets[i] -= knowledge_rewards[i]
         return targets
-
-    def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
-            return self.action_space.sample()
-        else:
-            values = self.model.predict([observation])
-            return np.argmax(values[0])
 
 class CBQlearner(Qlearner):
 
@@ -172,17 +158,10 @@ class CBQlearner(Qlearner):
                 targets[i] += competence_rewards[i]
         return targets
 
-    def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
-            return self.action_space.sample()
-        else:
-            values = self.model.predict([observation])
-            return np.argmax(values[0])
-
 class SAQlearner(Qlearner):
 
     def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
+        if random.random() < self.random_action_prob and not is_test:
             # Return action causing maximum uncertainty
             uncertainties = np.zeros(self.action_space.n)
             for a in range(self.action_space.n):
@@ -195,7 +174,7 @@ class SAQlearner(Qlearner):
 class ISAQlearner(Qlearner):
 
     def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
+        if random.random() < self.random_action_prob and not is_test:
             # Return action causing minimum uncertainty
             uncertainties = np.zeros(self.action_space.n)
             for a in range(self.action_space.n):
@@ -208,7 +187,7 @@ class ISAQlearner(Qlearner):
 class MSAQlearner(Qlearner):
 
     def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
+        if random.random() < self.random_action_prob and not is_test:
             # Return action causing average uncertainty
             uncertainties = np.zeros(self.action_space.n)
             for a in range(self.action_space.n):
@@ -224,7 +203,7 @@ class MSAQlearner(Qlearner):
 class IMSAQlearner(Qlearner):
 
     def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
+        if random.random() < self.random_action_prob and not is_test:
             # Return action causing average uncertainty
             uncertainties = np.zeros(self.action_space.n)
             for a in range(self.action_space.n):
@@ -233,6 +212,19 @@ class IMSAQlearner(Qlearner):
             + (1-0.99) * np.mean(uncertainties))
             uncertainties = np.abs(uncertainties - [self.moving_average_uncertainties])
             return np.argmax(uncertainties)
+        else:
+            values = self.model.predict([observation])
+            return np.argmax(values[0])
+
+class TESTQlearner(Qlearner):
+
+    def get_action(self, observation, is_test=False):
+        # Return action causing average uncertainty
+        if random.random() < self.random_action_prob and not is_test:
+            q_values = self.model.predict([observation])
+            uncertainties = self.model.get_q_value_uncertainty([observation])
+            max_estimate = q_values + uncertainties * self.random_action_prob
+            return np.argmax(max_estimate)
         else:
             values = self.model.predict([observation])
             return np.argmax(values[0])

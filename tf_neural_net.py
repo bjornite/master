@@ -182,8 +182,8 @@ class CBTfTwoLayerNet(object):
         # Calculate prediction and ecoding
         q_values = []
         for i in range(10):
-            q_values[i] = self.sess.run(self.Q, feed_dict={self.X: x,
-                                                           self.keep_prob: 0.8})
+            q_values.append(self.sess.run(self.Q, feed_dict={self.X: x,
+                                                             self.keep_prob: 0.8}))
         return np.std(q_values, axis=0)
 
     def get_prediction_uncertainty(self, x, a):
