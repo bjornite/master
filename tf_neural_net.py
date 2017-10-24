@@ -161,6 +161,7 @@ class CBTfTwoLayerNet(object):
         config = tf.ConfigProto(
              device_count={'GPU': 1}
         )
+        config.gpu_options.per_process_gpu_memory_fraction = 0.4
         self.sess = tf.Session(config=config)
         self.train_writer = tf.summary.FileWriter(log_dir,
                                                   self.sess.graph)
