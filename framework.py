@@ -8,6 +8,7 @@ import time
 import os
 from shutil import copyfile
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner
+from hdqn import HDQN
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,6 +36,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return IMSAQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "TESTQlearner":
         return TESTQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "HDQN":
+        return HDQN(name, env, log_dir)
     elif name == "Random_agent":
         return Random_agent(name, env, log_dir)
     else:
@@ -83,8 +86,8 @@ if __name__ == "__main__":
     except AttributeError:
         pass
     agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta)
-    learning_rate = agent.model.learning_rate
-    reg_beta = agent.model.beta
+    #learning_rate = agent.model.learning_rate
+    #reg_beta = agent.model.beta
     if args.random_cartpole:
         args.envname = "CartPole-v1-random"
     print('Initialized')
@@ -117,31 +120,36 @@ if __name__ == "__main__":
             if done and args.envname[:8] == "CartPole":
                 r = -1
                 # obs = np.zeros(env.observation_space.shape[0])
-            agent.replay_memory.append((double_state,
-                                        log_action,
-                                        np.concatenate([state, obs]),
-                                        r,
-                                        done))
+            agent.train((double_state,
+                         log_action,
+                         np.concatenate([state, obs]),
+                         r,
+                         done))
+            #agent.replay_memory.append((double_state,
+            #                            log_action,
+            #                            np.concatenate([state, obs]),
+            #                            r,
+            #                            done))
             last_state = state
             state = obs
-            if len(agent.replay_memory) > agent.replay_memory_size:
-                agent.replay_memory.pop(0)
+            #if len(agent.replay_memory) > agent.replay_memory_size:
+            #    agent.replay_memory.pop(0)
             totalr += r
             steps += 1
             if args.render:
                 env.render()
             if steps >= max_steps:
                 break
-            current_weights = agent.model.get_weights()
-            count = 0
-            for w in agent.old_weights:
-                agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
-                                              np.multiply(current_weights[count], (1-0.999)))
-                if agent.old_weights[count].shape[0] == 1:
-                    agent.old_weights[count] = agent.old_weights[count].reshape([-1])
-                count += 1
-            if len(agent.replay_memory) > agent.minibatch_size and not stop_training:
-                agent.train(args.no_tf_log)
+            #current_weights = agent.model.get_weights()
+            #count = 0
+            #for w in agent.old_weights:
+            #    agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
+            #                                  np.multiply(current_weights[count], (1-0.999)))
+            #    if agent.old_weights[count].shape[0] == 1:
+            #        agent.old_weights[count] = agent.old_weights[count].reshape([-1])
+            #    count += 1
+            #if len(agent.replay_memory) > agent.minibatch_size and not stop_training:
+            #    agent.train(args.no_tf_log)
         returns.append(totalr)
         if i % (args.num_rollouts / 100) == 0:
             totalr = 0.
@@ -162,13 +170,9 @@ if __name__ == "__main__":
                     last_state = state
                     state = obs
                     totalr += r
-                    #if args.render:
                     env.render()
             test_results.append(totalr / num_test_runs)
-            print("iter {0}, reward: {1:.2f}, lr: {2}, rp: {3}".format(i,
-                                                                       totalr/num_test_runs,
-                                                                       agent.model.learning_rate,
-                                                                       agent.random_action_prob))
+            print("iter {0}, reward: {1:.2f}".format(i, totalr/num_test_runs))
         else:
             test_results.append(None)
     agent.model.sess.close()

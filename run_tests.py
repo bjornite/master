@@ -40,7 +40,7 @@ start_datetime = parse_time_string(start_time)
 
 commands = []
 
-log_dir = "standard_test"
+log_dir = "standard_test2"
 try:
     os.mkdir(log_dir)
 except:
@@ -56,7 +56,7 @@ for i in range(args.num_runs):
                 args.num_rollouts,
                 log_tf))
 
-log_dir = "random_test"
+log_dir = "random_test2"
 try:
     os.mkdir(log_dir)
 except:

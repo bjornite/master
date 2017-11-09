@@ -15,7 +15,7 @@ class Qlearner(Agent):
         self.gamma = 0.999
         self.tau = 0.01
         self.random_action_prob = 0.9
-        self.random_action_decay = 0.99995
+        self.random_action_decay = 0.99999
         self.observations = []
         self.actions = []
         self.replay_memory = []
@@ -221,13 +221,12 @@ class TESTQlearner(Qlearner):
     def get_action(self, observation, is_test=False):
         # Return action causing average uncertainty
         if random.random() < self.random_action_prob and not is_test:
+            return self.action_space.sample()
+        else:
             q_values = self.model.predict([observation])
             uncertainties = self.model.get_q_value_uncertainty([observation])
             max_estimate = q_values + uncertainties * self.random_action_prob
             return np.argmax(max_estimate)
-        else:
-            values = self.model.predict([observation])
-            return np.argmax(values[0])
 
 class Random_agent(Agent):
     def get_action(self, input, is_test=False):
