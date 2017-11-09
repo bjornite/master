@@ -15,10 +15,11 @@ agents = [
     #"KBQlearner",
     #"IKBQlearner",
     #"CBQlearner",
-    "SAQlearner",
-    "ISAQlearner",
-    "MSAQlearner",
-    "IMSAQlearner"]
+    #"SAQlearner",
+    #"ISAQlearner",
+    #"MSAQlearner",
+    #"IMSAQlearner",
+    "TESTQlearner"]
 env = "CartPole-v1"
 DEFAULT_NUM_ROLLOUTS = 1000
 DEFAULT_NUM_WORKERS = 1
@@ -39,7 +40,7 @@ start_datetime = parse_time_string(start_time)
 
 commands = []
 
-log_dir = "standard_SAQ"
+log_dir = "standard_test2"
 try:
     os.mkdir(log_dir)
 except:
@@ -55,7 +56,7 @@ for i in range(args.num_runs):
                 args.num_rollouts,
                 log_tf))
 
-log_dir = "random_SAQ"
+log_dir = "random_test2"
 try:
     os.mkdir(log_dir)
 except:

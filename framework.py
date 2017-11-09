@@ -7,7 +7,8 @@ import datetime
 import time
 import os
 from shutil import copyfile
-from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner
+from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner
+from hdqn import HDQN
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -33,6 +34,10 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return MSAQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "IMSAQlearner":
         return IMSAQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "TESTQlearner":
+        return TESTQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "HDQN":
+        return HDQN(name, env, log_dir)
     elif name == "Random_agent":
         return Random_agent(name, env, log_dir)
     else:
@@ -57,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--learning_rate', type=float, default=5e-5)
     parser.add_argument('--regularization_beta', type=float, default=0.)
     parser.add_argument('--no_tf_log', action='store_true', default=False)
     args = parser.parse_args()
@@ -91,8 +96,6 @@ if __name__ == "__main__":
     actions = []
     test_results = []
     global_steps = 0
-    lr_update_step = agent.model.learning_rate * ((1.0/(args.num_rollouts*0.9)))
-    rp_update_step = agent.random_action_prob * ((1.0/(args.num_rollouts*0.9)))
     stop_training = False
     for i in range(args.num_rollouts):
         state = env.reset()
@@ -107,10 +110,6 @@ if __name__ == "__main__":
         totalr = 0.
         steps = 0
         mean_cb_r = 0
-        if agent.model.learning_rate > 1e-5:
-            agent.model.learning_rate -= lr_update_step
-        if agent.random_action_prob > 0:
-            agent.random_action_prob -= rp_update_step
         while not done:
             double_state = np.concatenate([last_state, state])
             action = agent.get_action(double_state)
@@ -118,9 +117,14 @@ if __name__ == "__main__":
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
-            if done:
+            if done and args.envname[:8] == "CartPole":
                 r = -1
                 # obs = np.zeros(env.observation_space.shape[0])
+            agent.train((double_state,
+                         log_action,
+                         np.concatenate([state, obs]),
+                         r,
+                         done))
             agent.replay_memory.append((double_state,
                                         log_action,
                                         np.concatenate([state, obs]),
@@ -161,18 +165,14 @@ if __name__ == "__main__":
                     if args.random_cartpole and (state[0] > 0.2):
                         action = env.action_space.sample()
                     obs, r, done, _ = env.step(action)
-                    if done:
+                    if done and args.envname[:8] == "CartPole":
                         r = -1
                     last_state = state
                     state = obs
                     totalr += r
-                    if args.render:
-                        env.render()
+                    env.render()
             test_results.append(totalr / num_test_runs)
-            print("iter {0}, reward: {1:.2f}, lr: {2}, rp: {3}".format(i,
-                                                                       totalr/num_test_runs,
-                                                                       agent.model.learning_rate,
-                                                                       agent.random_action_prob))
+            print("iter {0}, reward: {1:.2f}".format(i, totalr/num_test_runs))
         else:
             test_results.append(None)
     agent.model.sess.close()

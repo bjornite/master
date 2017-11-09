@@ -1,4 +1,5 @@
 import datetime
+import os
 
 
 def get_time_string():
@@ -6,6 +7,10 @@ def get_time_string():
 
 
 def get_log_dir(name, env, LOG_DIR_ROOT):
+    try:
+        os.mkdir(LOG_DIR_ROOT)
+    except:
+        pass
     return "{3}/{0}_{1}_{2}".format(name,
                                     env,
                                     get_time_string(),

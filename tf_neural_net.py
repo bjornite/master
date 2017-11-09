@@ -161,6 +161,7 @@ class CBTfTwoLayerNet(object):
         config = tf.ConfigProto(
              device_count={'GPU': 1}
         )
+        config.gpu_options.per_process_gpu_memory_fraction = 0.4
         self.sess = tf.Session(config=config)
         self.train_writer = tf.summary.FileWriter(log_dir,
                                                   self.sess.graph)
@@ -181,8 +182,8 @@ class CBTfTwoLayerNet(object):
         # Calculate prediction and ecoding
         q_values = []
         for i in range(10):
-            q_values[i] = self.sess.run(self.Q, feed_dict={self.X: x,
-                                                           self.keep_prob: 0.8})
+            q_values.append(self.sess.run(self.Q, feed_dict={self.X: x,
+                                                             self.keep_prob: 0.8}))
         return np.std(q_values, axis=0)
 
     def get_prediction_uncertainty(self, x, a):
