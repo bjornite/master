@@ -140,7 +140,7 @@ if __name__ == "__main__":
             count = 0
             for w in agent.old_weights:
                 agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
-                                              np.multiply(current_weights[count], (1-0.999)))
+                                                  np.multiply(current_weights[count], (1-0.999)))
                 if agent.old_weights[count].shape[0] == 1:
                     agent.old_weights[count] = agent.old_weights[count].reshape([-1])
                 count += 1
