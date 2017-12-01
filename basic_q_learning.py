@@ -7,7 +7,12 @@ import copy
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
         super(Qlearner, self).__init__(name, env, log_dir)
-        self.model = CBTfTwoLayerNet(self.observation_space.shape[0]*2,
+        inputsize = 0
+        try:
+            inputsize = self.observation_space.shape[0]*2
+        except(AttributeError):
+            inputsize = self.observation_space.n*2
+        self.model = CBTfTwoLayerNet(inputsize,
                                      self.action_space.n,
                                      learning_rate,
                                      reg_beta,
