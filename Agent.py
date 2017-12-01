@@ -12,5 +12,5 @@ class Agent(object):
     def get_action(self, input):
         raise NotImplementedError
 
-    def save_model(self):
+    def save_model(self, log_dir, filename):
         raise NotImplementedError

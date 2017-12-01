@@ -3,11 +3,13 @@ from tf_neural_net import CBTfTwoLayerNet
 import numpy as np
 import random
 import copy
+import os
+import tensorflow as tf
 
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
         super(Qlearner, self).__init__(name, env, log_dir)
-        self.model = CBTfTwoLayerNet(self.observation_space.shape[0]*2,
+        self.model = CBTfTwoLayerNet(self.observation_space.shape[0],
                                      self.action_space.n,
                                      learning_rate,
                                      reg_beta,
@@ -86,11 +88,20 @@ class Qlearner(Agent):
                          no_tf_log)
 
     def get_action(self, observation, is_test=False):
-        if random.random() < self.random_action_prob/4 and not is_test:
+        if random.random() < self.random_action_prob and not is_test:
             return self.action_space.sample()
         else:
             values = self.model.predict([observation])
             return np.argmax(values[0])
+
+    def save_model(self, log_dir, filename):
+        saver = tf.train.Saver()
+        saver.save(self.model.sess, log_dir + "/" + filename)
+
+    def load_model(self, filename):
+        saver = tf.train.Saver()
+        saver.restore(self.model.sess, filename)
+
 
 
 class KBQlearner(Qlearner):

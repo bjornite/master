@@ -165,6 +165,7 @@ class CBTfTwoLayerNet(object):
         self.sess = tf.Session(config=config)
         self.train_writer = tf.summary.FileWriter(log_dir,
                                                   self.sess.graph)
+        self.saver = tf.train.Saver()
         self.sess.run(init)
 
     def predict(self, x, weights=None):
