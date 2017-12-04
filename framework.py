@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import gym
+import deepexplorebenchmark
 #import universe
 import git
 
@@ -117,6 +118,7 @@ if __name__ == "__main__":
             #if done and args.envname[:8] == "CartPole":
             #    r = -1
                 # obs = np.zeros(env.observation_space.shape[0])
+
             sars = (state,
                     log_action,
                     obs,
@@ -124,6 +126,7 @@ if __name__ == "__main__":
                     done)
             sarslist.append(sars)
             agent.replay_memory.append(sars)
+
             last_state = state
             state = obs
             if len(agent.replay_memory) > agent.replay_memory_size:
@@ -165,7 +168,7 @@ if __name__ == "__main__":
                     last_state = state
                     state = obs
                     totalr += r
-                    env.render()
+                    #env.render()
             test_results.append(totalr / num_test_runs)
             print("iter {0}, reward: {1:.2f}".format(i, totalr/num_test_runs))
         else:
