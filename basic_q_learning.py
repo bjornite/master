@@ -76,7 +76,7 @@ class Qlearner(Agent):
         normalized_knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
         competence_rewards = self.model.get_meta_prediction_error(states,
                                                                   targetActionMask,
-                                                                  normalized_knowledge_rewards
+                                                                  normalized_knowledge_rewards,
                                                                   obs)
         targets = self.make_reward(r,
                                    done,

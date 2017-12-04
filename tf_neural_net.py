@@ -24,6 +24,7 @@ class CBTfTwoLayerNet(object):
         self.n_hiddens = [64, 64]
         self.use_batch_norm = False
         self.use_dropout = False
+        self.clip_gradients = True
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)
@@ -33,10 +34,28 @@ class CBTfTwoLayerNet(object):
         self.targetActionMask = tf.placeholder(
             tf.float32, [None, self.n_output])
 
-        self.Q = mlp(self.n_hiddens, self.X, self.n_output, "policy_network")
+        self.Q = mlp(self.n_hiddens,
+                     self.X,
+                     self.n_output,
+                     "policy_network",
+                     self.use_batch_norm,
+                     self.use_dropout,
+                     self.keep_prob)
         inputAndAction = tf.concat([self.X, self.targetActionMask], axis=1)
-        self.prediction = mlp([64], inputAndAction, self.n_input, "prediction_module")
-        self.error_prediction = mlp([64], inputAndAction, 1, "error_prediction_module")
+        self.prediction = mlp([64],
+                              inputAndAction,
+                              self.n_input,
+                              "prediction_module",
+                              self.use_batch_norm,
+                              self.use_dropout,
+                              self.keep_prob)
+        self.error_prediction = mlp([64],
+                                    inputAndAction,
+                                    1,
+                                    "error_prediction_module",
+                                    self.use_batch_norm,
+                                    self.use_dropout,
+                                    self.keep_prob)
 
         self.weightnames = [x.name for x in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES) if x.name.endswith('weights:0')]
         self.weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
@@ -45,19 +64,16 @@ class CBTfTwoLayerNet(object):
             # Prediction loss
             self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
                                             reduction_indices=[1])
-            # self.pred_error = tf.divide(unnormalized_pred_error,
-            #                            tf.reduce_max(unnormalized_pred_error, axis=[0]))
+
             self.pred_loss = tf.reduce_mean(self.pred_error)
             self.pred_loss_regularized = (self.pred_loss) #TODO: regularization
         with tf.name_scope('error_prediction_loss'):
-            # TODO: Figure out how to normalize this, get huge (and negative) values
             self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
                                                                     self.knowledge_reward),
                                                         reduction_indices=[1])
             self.error_prediction_loss = tf.reduce_mean(self.error_prediction_error)
             self.error_prediction_loss_regularized = (tf.abs(self.error_prediction_loss)) #TODO: regularize
         with tf.name_scope('policy_loss'):
-            # Loss
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
 
             self.q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
@@ -75,7 +91,7 @@ class CBTfTwoLayerNet(object):
         with tf.name_scope('loss'):
             self.loss = (self.policy_loss +
                          self.pred_loss_regularized +
-                         self.error_prediction_loss_regularized)
+                         self.error_prediction_loss)
 
         optimizer = tf.train.AdamOptimizer(self.learning_rate)
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -86,7 +102,8 @@ class CBTfTwoLayerNet(object):
 
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
-        grads, _ = tf.clip_by_global_norm(grads, 5.0)
+        if self.clip_gradients:
+            grads, _ = tf.clip_by_global_norm(grads, 5.0)
 
         # Ask the optimizer to apply the capped gradients.
         grads_and_vars = list(zip(grads, self.var_list))
