@@ -1,5 +1,19 @@
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib.layers as layers
+
+def mlp(n_hiddens, inpt, n_output, scope, use_batch_norm=False, use_dropout=False, keep_prob=0.8):
+    with tf.variable_scope(scope, reuse=False):
+        out = inpt
+        for h in n_hiddens:
+            out = layers.fully_connected(out, num_outputs=h, activation_fn=None)
+            if use_batch_norm:
+                out = tf.layers.batch_normalization(out)
+            out = tf.nn.relu(out)
+            if use_dropout:
+                out = tf.nn.dropout(out, keep_prob, noise_shape=[1, h])
+        q = layers.fully_connected(out, num_outputs=n_output, activation_fn=None)
+        return q
 
 class CBTfTwoLayerNet(object):
     def __init__(self, input_size, output_size, learning_rate=1e-4, reg_beta=1e-6, log_dir="test_logs"):
@@ -7,9 +21,9 @@ class CBTfTwoLayerNet(object):
         self.learning_rate = learning_rate
         self.beta = reg_beta
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
-        self.n_hidden_1 = 128
-        self.n_hidden_2 = 128
-
+        self.n_hiddens = [64, 64]
+        self.use_batch_norm = False
+        self.use_dropout = False
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)
@@ -19,81 +33,13 @@ class CBTfTwoLayerNet(object):
         self.targetActionMask = tf.placeholder(
             tf.float32, [None, self.n_output])
 
-        with tf.name_scope('policy_network'):
-            with tf.name_scope('layer_1'):
-                W1 = tf.Variable(
-                    tf.random_normal([self.n_input, self.n_hidden_1],
-                                     stddev=np.sqrt(2.0 / self.n_input)), name='W1')
-                b1 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_1]), name='b1')
-                z1 = tf.add(tf.matmul(self.X, W1), b1)
-                bn_input_1 = tf.layers.batch_normalization(z1)
-                a1 = tf.nn.relu(bn_input_1)
-                h1 = tf.nn.dropout(a1, self.keep_prob, noise_shape=[1, self.n_hidden_1])
-            with tf.name_scope('layer_2'):
-                W2 = tf.Variable(
-                    tf.random_normal([self.n_hidden_1, self.n_hidden_2],
-                                     stddev=np.sqrt(2.0 / self.n_hidden_1)), name='W2')
-                b2 = tf.Variable(tf.constant(0.1, shape=[self.n_hidden_2]), name='b2'),
-                z2 = tf.add(tf.matmul(h1, W2), b2)
-                bn_input_2 = tf.layers.batch_normalization(z2)
-                a2 = tf.nn.relu(bn_input_2)
-                h2 = tf.nn.dropout(a2, self.keep_prob, noise_shape=[1, self.n_hidden_2])
-            with tf.name_scope('output_layer'):
-                W3 = tf.Variable(
-                    tf.random_normal([self.n_hidden_2, self.n_output],
-                                     stddev=np.sqrt(2.0 / self.n_hidden_2)), name='W3')
-                b3 = tf.Variable(tf.constant(0.1, shape=[self.n_output]), name='b3')
-                self.Q = tf.add(tf.matmul(h2, W3), b3)
-        with tf.name_scope('prediction_module'):
-            pred_h_size = 64
-            WP1 = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, pred_h_size],
-                                 stddev=np.sqrt(2.0 / self.n_input)), name='WP1')
-            bP1 = tf.Variable(tf.constant(0.1, shape=[pred_h_size]), name='bP1')
-            bPz1 = tf.add(tf.matmul(tf.concat([self.X, self.targetActionMask], axis=1),
-                                    WP1),
-                          bP1)
-            bn_input_p = tf.layers.batch_normalization(bPz1)
-            bPa1 = tf.nn.relu(bn_input_p)
-            bPh1 = tf.nn.dropout(bPa1, self.keep_prob, noise_shape=[1, pred_h_size])
-            WP2 = tf.Variable(
-                tf.random_normal([pred_h_size, self.n_input],
-                                 stddev=np.sqrt(2.0 / pred_h_size)), name='WP2')
-            bP2 = tf.Variable(tf.constant(0.1, shape=[self.n_input]), name='bP2')
-            self.prediction = tf.add(tf.matmul(bPh1, WP2), bP2)
-        with tf.name_scope('error_prediction_module'):
-            err_pred_h_size = 64
-            WEP1 = tf.Variable(
-                tf.random_normal([self.n_input + self.n_output, err_pred_h_size],
-                                 stddev=np.sqrt(2.0 / self.n_input)), name='WEP1')
-            bEP1 = tf.Variable(tf.constant(0.1, shape=[pred_h_size]), name='bEP1')
-            bEPz1 = tf.add(tf.matmul(tf.concat([self.X, self.targetActionMask], axis=1),
-                                     WEP1),
-                           bEP1)
-            bn_input_ep = tf.layers.batch_normalization(bEPz1)
-            bEPa1 = tf.nn.relu(bn_input_ep)
-            bEPh1 = tf.nn.dropout(bEPa1, self.keep_prob, noise_shape=[1, err_pred_h_size])
-            WEP2 = tf.Variable(
-                tf.random_normal([pred_h_size, 1],
-                                 stddev=np.sqrt(2.0 / pred_h_size)), name='WEP2')
-            bEP2 = tf.Variable(tf.constant(0.1, shape=[1]), name='bEP2')
-            self.error_prediction = tf.add(tf.matmul(bEPh1, WEP2), bEP2)
+        self.Q = mlp(self.n_hiddens, self.X, self.n_output, "policy_network")
+        inputAndAction = tf.concat([self.X, self.targetActionMask], axis=1)
+        self.prediction = mlp([64], inputAndAction, self.n_input, "prediction_module")
+        self.error_prediction = mlp([64], inputAndAction, 1, "error_prediction_module")
 
-        self.weightnames = ["W1", "b1",
-                            "W2", "b2",
-                            "W3", "b3",
-                            "WP1", "bP1",
-                            "WP2", "bP2",                            
-                            "WEP1", "bEP1",
-                            "WEP2", "bEP2",
-        ]
-        self.weights = [W1, b1,
-                        W2, b2,
-                        W3, b3,
-                        WP1, bP1,
-                        WP2, bP2,                        
-                        WEP1, bEP1,
-                        WEP2, bEP2]
+        self.weightnames = [x.name for x in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES) if x.name.endswith('weights:0')]
+        self.weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
         with tf.name_scope('prediction_loss'):
             # Prediction loss
@@ -102,34 +48,24 @@ class CBTfTwoLayerNet(object):
             # self.pred_error = tf.divide(unnormalized_pred_error,
             #                            tf.reduce_max(unnormalized_pred_error, axis=[0]))
             self.pred_loss = tf.reduce_mean(self.pred_error)
-            self.pred_loss_regularized = (self.pred_loss +
-                                          self.beta * tf.reduce_sum(tf.square(WP1)) +
-                                          self.beta * tf.reduce_sum(tf.square(WP2)))
+            self.pred_loss_regularized = (self.pred_loss) #TODO: regularization
         with tf.name_scope('error_prediction_loss'):
             # TODO: Figure out how to normalize this, get huge (and negative) values
             self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
                                                                     self.knowledge_reward),
                                                         reduction_indices=[1])
             self.error_prediction_loss = tf.reduce_mean(self.error_prediction_error)
-            self.error_prediction_loss_regularized = (tf.abs(self.error_prediction_loss) +
-                                                      self.beta * tf.reduce_sum(tf.square(WEP1)) +
-                                                      self.beta * tf.reduce_sum(tf.square(WEP2)))
+            self.error_prediction_loss_regularized = (tf.abs(self.error_prediction_loss)) #TODO: regularize
         with tf.name_scope('policy_loss'):
             # Loss
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
 
             self.q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
-                                     reduction_indices=[1])
+                                          reduction_indices=[1])
 
             self.qvalue_error = tf.reduce_mean(tf.square(tf.subtract(self.q_values, self.targetQ)))
-            self.policy_loss = (self.qvalue_error +
-                                self.beta * tf.reduce_sum(tf.square(W1)) +
-                                self.beta * tf.reduce_sum(tf.square(W2)) +
-                                self.beta * tf.reduce_sum(tf.square(W3)))
-        #for w in range(len(self.weights)):
-        #    tf.summary.histogram(self.weightnames[w], self.weights[w])
-        #tf.summary.histogram('meta_error_prediction', self.error_prediction_error)
-        #tf.summary.histogram('pred_error', self.pred_error)
+            self.policy_loss = (self.qvalue_error) #TODO: Regularize
+
         tf.summary.scalar('mean_meta_error', self.error_prediction_loss)
         tf.summary.scalar('mean qvalue_error', self.qvalue_error)
         tf.summary.scalar('mean_policy_loss', self.policy_loss)

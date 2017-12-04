@@ -179,5 +179,5 @@ if __name__ == "__main__":
     log_data["regularization_beta"] = [reg_beta]*len(log_data)
     log_data["test_results"] = test_results
     log_data.to_csv("{0}/returns.csv".format(log_dir))
-    with open("{0}/trajectories.txt", "w") as f:
+    with open("{0}/trajectories.txt", "w+") as f:
         f.write(sarslist)

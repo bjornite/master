@@ -70,7 +70,7 @@ class Qlearner(Agent):
         normalized_knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
         competence_rewards = self.model.get_meta_prediction_error(states,
                                                                   targetActionMask,
-                                                                  normalized_knowledge_rewards,
+                                                                  normalized_knowledge_rewards
                                                                   obs)
         targets = self.make_reward(r,
                                    done,
@@ -165,7 +165,7 @@ class CBQlearner(Qlearner):
         max_competence_reward = np.max(np.abs(cp_comprew))
         competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
         for i in range(self.minibatch_size):
-            if competence_rewards[i] > 0:
+            if competence_rewards[i] > 0 and not done[i]:
                 targets[i] += competence_rewards[i]
         return targets
 
