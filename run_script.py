@@ -10,8 +10,8 @@ DEFAULT_NUM_RUNS = 15
 RUN_FILE = "framework.py"
 LOG_DIR_ROOT = "logfiles"
 DEFAULT_AGENT = "Qlearner"
-DEFAULT_ENV = "CartPole-v1"
-DEFAULT_NUM_ROLLOUTS = 500
+DEFAULT_ENV = "CartPole-v0"
+DEFAULT_NUM_ROLLOUTS = 600
 DEFAULT_NUM_WORKERS = 7
 DEFAULT_LEARNING_RATE=1e-3
 
@@ -41,15 +41,16 @@ except:
 commands = []
 
 for i in range(args.num_runs):
-    commands.append(
-        "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6}".format(
-            RUN_FILE,
-            args.agentname,
-            args.envname,
-            LOG_DIR_ROOT,
-            args.num_rollouts,
-            log_tf,
-            args.learning_rate))
+     commands.append(
+         "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6}".format(
+             RUN_FILE,
+             args.agentname,
+             args.envname,
+             args.log_dir,
+             args.num_rollouts,
+             log_tf,
+             args.learning_rate))
+    #commands.append("python -m baselines.deepq.experiments.train_cartpole")
 
 pool = Pool(args.num_workers)  # two concurrent commands at a time
 for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):

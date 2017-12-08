@@ -150,29 +150,29 @@ if __name__ == "__main__":
         returns.append(totalr)
         if i % (args.num_rollouts / 10) == 0:
             agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-        if i % (args.num_rollouts / 100) == 0:
-            totalr = 0.
-            for j in range(num_test_runs):
-                state = env.reset()
-                action = env.action_space.sample()
-                obs, r, done, _ = env.step(action)
-                last_state = state
-                state = obs
-                while not done:
-                    action = agent.get_action(state, is_test=True)
-                    if args.random_cartpole and (state[0] > 0.2):
-                        action = env.action_space.sample()
-                    obs, r, done, _ = env.step(action)
-                    if done and args.envname[:8] == "CartPole":
-                        r = -1
-                    last_state = state
-                    state = obs
-                    totalr += r
-                    env.render()
-            test_results.append(totalr / num_test_runs)
-            print("iter {0}, reward: {1:.2f}".format(i, totalr/num_test_runs))
-        else:
-            test_results.append(None)
+        #if i % (args.num_rollouts / 100) == 0:
+            # totalr = 0.
+            # for j in range(num_test_runs):
+            #     state = env.reset()
+            #     action = env.action_space.sample()
+            #     obs, r, done, _ = env.step(action)
+            #     last_state = state
+            #     state = obs
+            #     while not done:
+            #         action = agent.get_action(state, is_test=True)
+            #         if args.random_cartpole and (state[0] > 0.2):
+            #             action = env.action_space.sample()
+            #         obs, r, done, _ = env.step(action)
+            #         if done and args.envname[:8] == "CartPole":
+            #             r = 0
+            #         last_state = state
+            #         state = obs
+            #         totalr += r
+            #         env.render()
+            # test_results.append(totalr / num_test_runs)
+            print("iter {0}, reward: {1:.2f}".format(i, totalr))
+        #else:
+        test_results.append(None)
     agent.model.sess.close()
     log_data = pd.DataFrame()
     log_data["return"] = returns
@@ -182,5 +182,5 @@ if __name__ == "__main__":
     log_data["regularization_beta"] = [reg_beta]*len(log_data)
     log_data["test_results"] = test_results
     log_data.to_csv("{0}/returns.csv".format(log_dir))
-    with open("{0}/trajectories.txt", "w+") as f:
-        f.write(sarslist)
+    with open("{0}/trajectories.txt".format(log_dir), "w+") as f:
+        f.write(str(sarslist))

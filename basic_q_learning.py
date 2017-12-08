@@ -20,17 +20,17 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.gamma = 0.999
+        self.gamma = 1.0
         self.tau = 0.01
         self.random_action_prob = 0.9
-        self.random_action_decay = 0.99999
+        self.random_action_decay = 0.9997
         self.observations = []
         self.actions = []
         self.replay_memory = []
-        self.replay_memory_size = 1000000
-        self.minibatch_size = 1000
+        self.replay_memory_size = 50000
+        self.minibatch_size = 32
         self.old_weights = self.model.get_weights()
-        self.target_update_freq = 100
+        self.target_update_freq = 500
         self.max_knowledge_reward = 0
         self.max_competence_reward = 0
         self.improvement_threshold = 0.2
@@ -85,7 +85,8 @@ class Qlearner(Agent):
                                    knowledge_rewards,
                                    competence_rewards)
         #self.model.learning_rate *= 0.99995 # Converges in roughly 200000 steps
-        self.random_action_prob *= self.random_action_decay
+        if self.random_action_prob > 0.02:
+            self.random_action_prob *= self.random_action_decay
         self.model.train(states,
                          normalized_knowledge_rewards,
                          obs,

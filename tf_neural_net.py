@@ -21,10 +21,10 @@ class CBTfTwoLayerNet(object):
         self.learning_rate = learning_rate
         self.beta = reg_beta
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
-        self.n_hiddens = [64, 64]
+        self.n_hiddens = [64]
         self.use_batch_norm = False
         self.use_dropout = False
-        self.clip_gradients = True
+        self.clip_gradients = False
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)
@@ -91,7 +91,7 @@ class CBTfTwoLayerNet(object):
         with tf.name_scope('loss'):
             self.loss = (self.policy_loss +
                          self.pred_loss_regularized +
-                         self.error_prediction_loss)
+                         self.error_prediction_loss_regularized)
 
         optimizer = tf.train.AdamOptimizer(self.learning_rate)
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -103,7 +103,7 @@ class CBTfTwoLayerNet(object):
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
         if self.clip_gradients:
-            grads, _ = tf.clip_by_global_norm(grads, 5.0)
+            grads, _ = tf.clip_by_global_norm(grads, 10.0)
 
         # Ask the optimizer to apply the capped gradients.
         grads_and_vars = list(zip(grads, self.var_list))

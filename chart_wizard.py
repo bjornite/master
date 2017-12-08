@@ -16,6 +16,7 @@ if __name__=="__main__":
     parser.add_argument('--agentname', type=str, nargs="*", default=[])
     parser.add_argument('--datetime_low', type=str, default="")
     parser.add_argument('--datetime_high', type=str, default=get_time_string())
+    parser.add_argument('--filename', type=str)
     args = parser.parse_args()
 
     log_dir = args.log_dir
@@ -37,14 +38,20 @@ if __name__=="__main__":
                             series_dict[counter] = s
                             counter += 1
 
-    df = pd.concat(series_dict, ignore_index=True).dropna()
+    df = pd.concat(series_dict, ignore_index=True)
     if args.agentname != []:
         df = df.loc[df['agent'].isin(args.agentname)]
-    sns.tsplot(data=df,
-               time="iteration",
-               value="test_results",
-               condition=args.condition,
-               unit="run",
-               err_style="unit_traces",
-               estimator=np.average)
-    plt.show()
+    #df.plot()
+    import latexipy as lp
+
+    lp.latexify()  # Change to a serif font that fits with most LaTeX.
+
+    with lp.figure('validation'):  # saves in img/ by default.
+        sns.tsplot(data=df,
+                   time="iteration",
+                   value="return",
+                   condition=args.condition,
+                   unit="run",
+                   #err_style="unit_traces",
+                   estimator=np.nanmean)
+        plt.xlabel("Episode")
