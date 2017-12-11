@@ -24,8 +24,8 @@ class CBTfTwoLayerNet(object):
         self.n_hiddens = [64]
         self.use_batch_norm = False
         self.use_dropout = False
-        self.clip_gradients = False
-        self.use_huber_loss = True
+        self.clip_gradients = True
+        self.use_huber_loss = False
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)
@@ -105,7 +105,7 @@ class CBTfTwoLayerNet(object):
 
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         # Compute the gradients for a list of variables.
-        grads = tf.gradients(self.loss, self.var_list)
+        grads = optimizer.compute_gradients(self.loss, self.var_list)
 
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
@@ -116,8 +116,8 @@ class CBTfTwoLayerNet(object):
             #grads, _ = tf.clip_by_global_norm(grads, 10.0)
 
         # Ask the optimizer to apply the capped gradients.
-        grads_and_vars = list(zip(grads, self.var_list))
-        self.train_op = optimizer.apply_gradients(grads_and_vars, global_step=self.global_step)
+        #grads_and_vars = list(zip(grads, self.var_list))
+        self.train_op = optimizer.apply_gradients(grads, global_step=self.global_step)
         self.merged = tf.summary.merge_all()
 
         init = tf.global_variables_initializer()
