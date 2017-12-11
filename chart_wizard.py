@@ -52,6 +52,7 @@ if __name__=="__main__":
                    value="return",
                    condition=args.condition,
                    unit="run",
+                   ci="sd",
                    #err_style="unit_traces",
                    estimator=np.nanmean)
         plt.xlabel("Episode")

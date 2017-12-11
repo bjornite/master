@@ -25,6 +25,7 @@ class CBTfTwoLayerNet(object):
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = False
+        self.use_huber_loss = True
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)
@@ -79,8 +80,14 @@ class CBTfTwoLayerNet(object):
             self.q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
                                           reduction_indices=[1])
 
-            self.qvalue_error = tf.reduce_mean(tf.square(tf.subtract(self.q_values, self.targetQ)))
-            self.policy_loss = (self.qvalue_error) #TODO: Regularize
+            diff = tf.subtract(self.q_values, self.targetQ)
+            if self.use_huber_loss:
+                self.qvalue_error = tf.reduce_mean(tf.where(tf.abs(diff) < 1.0,
+                                                            tf.square(diff)*0.5,
+                                                            tf.abs(diff) - 0.5))
+            else:
+                self.qvalue_error = tf.reduce_mean(tf.square(diff))
+            self.policy_loss = (self.qvalue_error)  # TODO: Regularize
 
         tf.summary.scalar('mean_meta_error', self.error_prediction_loss)
         tf.summary.scalar('mean qvalue_error', self.qvalue_error)
@@ -103,7 +110,10 @@ class CBTfTwoLayerNet(object):
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
         if self.clip_gradients:
-            grads, _ = tf.clip_by_global_norm(grads, 10.0)
+            for i, (grad, var) in enumerate(grads):
+                if grad is not None:
+                    grads[i] = (tf.clip_by_norm(grad, 10), var)
+            #grads, _ = tf.clip_by_global_norm(grads, 10.0)
 
         # Ask the optimizer to apply the capped gradients.
         grads_and_vars = list(zip(grads, self.var_list))

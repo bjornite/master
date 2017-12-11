@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
-    parser.add_argument('--learning_rate', type=float, default=5e-4)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--regularization_beta', type=float, default=0.)
     parser.add_argument('--no_tf_log', action='store_true', default=False)
     parser.add_argument('--model', type=str, default="")
@@ -83,6 +83,7 @@ if __name__ == "__main__":
         tf.get_default_session().close()
     except AttributeError:
         pass
+    sliding_target_updates = False
     agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta)
     stop_training = False
     if args.model is not "":
@@ -98,13 +99,6 @@ if __name__ == "__main__":
     global_steps = 0
     for i in range(args.num_rollouts):
         state = env.reset()
-        action = env.action_space.sample()
-        obs, r, done, _ = env.step(action)
-        last_state = state
-        state = obs
-        local_observations = []
-        local_actions = []
-        local_rewards = []
         done = False
         totalr = 0.
         steps = 0
@@ -127,7 +121,6 @@ if __name__ == "__main__":
             sarslist.append(sars)
             agent.replay_memory.append(sars)
 
-            last_state = state
             state = obs
             if len(agent.replay_memory) > agent.replay_memory_size:
                 agent.replay_memory.pop(0)
@@ -137,16 +130,25 @@ if __name__ == "__main__":
                 env.render()
             if steps >= max_steps:
                 break
-            current_weights = agent.model.get_weights()
             count = 0
-            for w in agent.old_weights:
-                agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
-                                                  np.multiply(current_weights[count], (1-0.999)))
-                if agent.old_weights[count].shape[0] == 1:
-                    agent.old_weights[count] = agent.old_weights[count].reshape([-1])
-                count += 1
+            if sliding_target_updates:
+                current_weights = agent.model.get_weights()
+                for w in agent.old_weights:
+                    agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
+                                                      np.multiply(current_weights[count], (1-0.999)))
+                    if agent.old_weights[count].shape[0] == 1:
+                        agent.old_weights[count] = agent.old_weights[count].reshape([-1])
+                    count += 1
+            elif global_steps % agent.target_update_freq == 0:
+                current_weights = agent.model.get_weights()
+                for w in agent.old_weights:
+                    agent.old_weights[count] = np.array(current_weights[count])
+                    if agent.old_weights[count].shape[0] == 1:
+                        agent.old_weights[count] = agent.old_weights[count].reshape([-1])
+                    count += 1
             if len(agent.replay_memory) > agent.minibatch_size and not stop_training:
                 agent.train(args.no_tf_log)
+                global_steps += 1
         returns.append(totalr)
         if i % (args.num_rollouts / 10) == 0:
             agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
