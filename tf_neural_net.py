@@ -122,7 +122,7 @@ class CBTfTwoLayerNet(object):
 
         init = tf.global_variables_initializer()
         config = tf.ConfigProto(
-             device_count={'GPU': 1}
+             device_count={'GPU': 0}
         )
         config.gpu_options.per_process_gpu_memory_fraction = 0.4
         self.sess = tf.Session(config=config)
