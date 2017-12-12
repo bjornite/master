@@ -6,6 +6,13 @@ import copy
 import os
 import tensorflow as tf
 
+class LinearSchedule():
+    def __init__(self, start=1.0, steps=10000, stop=0.02):
+        self.func = lambda t: stop + (start - stop) * (max(0, steps - t) / steps)
+
+    def eps(self, t):
+        return self.func(t)
+
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
         super(Qlearner, self).__init__(name, env, log_dir)
@@ -20,6 +27,8 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
+        self.epsilon_schedule = LinearSchedule(1.0, 10000, 0.02)
+        self.training_steps = 0
         self.gamma = 1.0
         self.tau = 0.01
         self.random_action_prob = 0.9
@@ -84,9 +93,9 @@ class Qlearner(Agent):
                                    # base_q_values,
                                    knowledge_rewards,
                                    competence_rewards)
-        #self.model.learning_rate *= 0.99995 # Converges in roughly 200000 steps
-        if self.random_action_prob > 0.02:
-            self.random_action_prob *= self.random_action_decay
+
+        self.random_action_prob = self.epsilon_schedule.eps(self.training_steps)
+        self.training_steps += 1
         self.model.train(states,
                          normalized_knowledge_rewards,
                          obs,
