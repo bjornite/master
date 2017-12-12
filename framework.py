@@ -6,6 +6,7 @@ import random
 import datetime
 import time
 import os
+import json
 from shutil import copyfile
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner
 from utilities import get_time_string, get_log_dir, parse_time_string
@@ -109,10 +110,7 @@ if __name__ == "__main__":
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
-            if r > 2:
-                r = 2
-            if r < -2:
-                r = -2
+            r = max(-1, min(1, r))
             #if done and args.envname[:8] == "CartPole":
             #    r = -1
                 # obs = np.zeros(env.observation_space.shape[0])
@@ -188,5 +186,5 @@ if __name__ == "__main__":
     log_data["regularization_beta"] = [reg_beta]*len(log_data)
     log_data["test_results"] = test_results
     log_data.to_csv("{0}/returns.csv".format(log_dir))
-    with open("{0}/trajectories.txt".format(log_dir), "w+") as f:
-        f.write(str(sarslist))
+    #with open("{0}/trajectories.txt".format(log_dir), "w+") as f:
+    #    f.write(json.dumps(sarslist))

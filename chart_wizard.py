@@ -45,8 +45,11 @@ if __name__=="__main__":
     import latexipy as lp
 
     lp.latexify()  # Change to a serif font that fits with most LaTeX.
-
-    with lp.figure('validation'):  # saves in img/ by default.
+    if log_dir[-1] is not '/':
+        txt = log_dir.split('/')
+    else:
+        txt = log_dir[:-1].split('/')
+    with lp.figure(txt[-1]):  # saves in img/ by default.
         sns.tsplot(data=df,
                    time="iteration",
                    value="return",
