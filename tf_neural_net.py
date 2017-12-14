@@ -12,7 +12,7 @@ def mlp(n_hiddens, inpt, n_output, scope, use_batch_norm=False, use_dropout=Fals
             out = tf.nn.relu(out)
             if use_dropout:
                 out = tf.nn.dropout(out, keep_prob, noise_shape=[1, h])
-        q = layers.fully_connected(out, num_outputs=n_output, activation_fn=None)
+        q = layers.fully_connected(out, num_outputs=n_output, activation_fn=None, scope="output")
         return q
 
 class CBTfTwoLayerNet(object):
@@ -114,7 +114,10 @@ class CBTfTwoLayerNet(object):
         if self.normalizedSDG:
             for i, (grad, var) in enumerate(gradients):
                 if grad is not None:
-                    grads[i] = tf.scalar_mul(self.norm_factor, grad)
+                    if "policy_network/output" not in var.name:
+                        grads[i] = tf.scalar_mul(self.norm_factor, grad)
+                    else:
+                        print(var)
         if self.clip_gradients:
             for i, (grad, var) in enumerate(gradients):
                 if grad is not None:
