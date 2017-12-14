@@ -110,8 +110,7 @@ if __name__ == "__main__":
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
-            if obs[0] > 0.2:
-                r = r*100
+            r = r*100
             #r = max(-1, min(1, r))
             #if done and args.envname[:8] == "CartPole":
             #    r = -1
@@ -176,7 +175,7 @@ if __name__ == "__main__":
             #         totalr += r
             #         env.render()
             # test_results.append(totalr / num_test_runs)
-            print("iter {0}, reward: {1:.2f}".format(i, totalr))
+            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.target_mean))
         #else:
         test_results.append(None)
     agent.model.sess.close()
@@ -188,4 +187,5 @@ if __name__ == "__main__":
     log_data["regularization_beta"] = [reg_beta]*len(log_data)
     log_data["test_results"] = test_results
     log_data.to_csv("{0}/returns.csv".format(log_dir))
-    pickle.dump(sarslist,"{0}/trajectories.pkl".format(log_dir))
+    with open("{0}/trajectories.pkl".format(log_dir), 'wb+') as f:
+        pickle.dump(sarslist, f)
