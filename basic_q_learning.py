@@ -34,8 +34,7 @@ class Qlearner(Agent):
         self.gamma = 1.0
         self.tau = 0.01
         self.norm_beta = 1e-4
-        self.random_action_prob = 0.9
-        self.random_action_decay = 0.9997
+        self.random_action_prob = 1
         self.target_mean = 0
         self.target_sigma = 0
         self.observations = []
