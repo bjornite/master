@@ -20,12 +20,14 @@ class CBTfTwoLayerNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
+        self.norm_factor = tf.placeholder("float", shape=())
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.n_hiddens = [64]
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = True
         self.use_huber_loss = False
+        self.normalizedSDG = True
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)
@@ -105,18 +107,24 @@ class CBTfTwoLayerNet(object):
 
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         # Compute the gradients for a list of variables.
-        grads = optimizer.compute_gradients(self.loss, self.var_list)
-
+        gradients = optimizer.compute_gradients(self.loss, self.var_list)
+        grads = [()]*len(gradients)
         # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
         # need to the 'gradient' part, for example cap them, etc.
+        if self.normalizedSDG:
+            for i, (grad, var) in enumerate(gradients):
+                if grad is not None:
+                    grads[i] = tf.scalar_mul(self.norm_factor, grad)
         if self.clip_gradients:
-            for i, (grad, var) in enumerate(grads):
+            for i, (grad, var) in enumerate(gradients):
                 if grad is not None:
                     grads[i] = (tf.clip_by_norm(grad, 10), var)
             #grads, _ = tf.clip_by_global_norm(grads, 10.0)
 
         # Ask the optimizer to apply the capped gradients.
         #grads_and_vars = list(zip(grads, self.var_list))
+        if grads == []:
+            grads = gradients
         self.train_op = optimizer.apply_gradients(grads, global_step=self.global_step)
         self.merged = tf.summary.merge_all()
 
@@ -162,14 +170,15 @@ class CBTfTwoLayerNet(object):
                                                                          self.keep_prob: 0.8}))
         return np.mean(np.std(predictions, axis=0))
 
-    def train(self, x, k_rew, x_next, targetQ, targetActionMask, no_tf_log):
+    def train(self, x, k_rew, x_next, targetQ, targetActionMask, normalization_factor, no_tf_log):
         # Calculate next prediction, the modules encoding and the error of the last prediction
         # TODO: Optimize so the train step doesn't need to do a forward pass
         feed_dict = {self.X: x,
                      self.knowledge_reward: np.array(k_rew),
                      self.X_next: x_next,
                      self.targetQ: targetQ,
-                     self.targetActionMask: targetActionMask}
+                     self.targetActionMask: targetActionMask,
+                     self.norm_factor: normalization_factor}
         opt, summary, global_step = self.sess.run([self.train_op,
                                                    self.merged,
                                                    self.global_step],

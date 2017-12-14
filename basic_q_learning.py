@@ -33,8 +33,11 @@ class Qlearner(Agent):
         self.training_steps = 0
         self.gamma = 1.0
         self.tau = 0.01
+        self.norm_beta = 1e-4
         self.random_action_prob = 0.9
         self.random_action_decay = 0.9997
+        self.target_mean = 0
+        self.target_sigma = 0
         self.observations = []
         self.actions = []
         self.replay_memory = []
@@ -95,7 +98,11 @@ class Qlearner(Agent):
                                    # base_q_values,
                                    knowledge_rewards,
                                    competence_rewards)
-
+        for target in targets:
+            self.target_mean = self.target_mean * (1-self.norm_beta) + self.norm_beta*target
+            v = self.target_sigma * (1-self.norm_beta) + self.norm_beta*target*target
+            self.target_sigma = max(1e-5, v - (self.target_mean * self.target_mean))
+        normalization_factor = 1/(self.target_sigma*self.target_sigma)
         self.random_action_prob = self.epsilon_schedule.eps(self.training_steps)
         self.training_steps += 1
         self.model.train(states,
@@ -103,6 +110,7 @@ class Qlearner(Agent):
                          obs,
                          targets,
                          targetActionMask,
+                         normalization_factor,
                          no_tf_log)
 
     def get_action(self, observation, is_test=False):
