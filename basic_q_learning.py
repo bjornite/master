@@ -29,7 +29,7 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 10000, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, 100, 0.02)
         self.training_steps = 0
         self.gamma = 1.0
         self.tau = 0.01
@@ -148,7 +148,7 @@ class KBQlearner(Qlearner):
         max_knowledge_reward = np.max(knowledge_rewards)
         knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(self.minibatch_size):
-            targets[i] += knowledge_rewards[i]
+            targets[i] += 10 * knowledge_rewards[i]
         return targets
 
 class IKBQlearner(Qlearner):

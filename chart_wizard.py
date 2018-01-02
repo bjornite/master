@@ -25,10 +25,10 @@ if __name__=="__main__":
     counter = 0
 
     for subdir, dirs, files in os.walk(log_dir):
-        for dir in dirs:
+        for dir in sorted(dirs):
             if dir.split("_")[1] == args.envname:
                 for subdir2, dirs2, files2 in os.walk(os.path.join(log_dir, dir)):
-                    for file in files2:
+                    for file in sorted(files2):
                         if file == "returns.csv":
                             s = pd.read_csv(os.path.join(log_dir, dir, file),
                                             header=None,
@@ -42,14 +42,14 @@ if __name__=="__main__":
     if args.agentname != []:
         df = df.loc[df['agent'].isin(args.agentname)]
     #df.plot()
+    df = df.loc[df['iteration'] <= 600]
     import latexipy as lp
-
     lp.latexify()  # Change to a serif font that fits with most LaTeX.
     if log_dir[-1] is not '/':
         txt = log_dir.split('/')
     else:
         txt = log_dir[:-1].split('/')
-    with lp.figure(txt[-1]):  # saves in img/ by default.
+    with lp.figure(txt[-1], size = lp.figure_size(n_columns=1)):  # saves in img/ by default.
         sns.tsplot(data=df,
                    time="iteration",
                    value="return",
@@ -58,4 +58,5 @@ if __name__=="__main__":
                    ci="sd",
                    #err_style="unit_traces",
                    estimator=np.nanmean)
+        plt.ylim([0, 210])
         plt.xlabel("Episode")

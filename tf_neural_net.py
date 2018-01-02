@@ -27,7 +27,7 @@ class CBTfTwoLayerNet(object):
         self.use_dropout = False
         self.clip_gradients = True
         self.use_huber_loss = False
-        self.normalizedSDG = True
+        self.normalizedSDG = False
         # TF model variables:
         self.n_input = input_size
         self.n_output = int(output_size)

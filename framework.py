@@ -110,7 +110,6 @@ if __name__ == "__main__":
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
-            r = r*100
             #r = max(-1, min(1, r))
             #if done and args.envname[:8] == "CartPole":
             #    r = -1
@@ -119,7 +118,7 @@ if __name__ == "__main__":
             sars = (state,
                     log_action,
                     obs,
-                    r,
+                    r + random.random(),
                     done)
             sarslist.append(sars)
             agent.replay_memory.append(sars)

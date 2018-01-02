@@ -7,22 +7,22 @@ from subprocess import call
 from utilities import get_time_string, get_log_dir, parse_time_string
 
 
-DEFAULT_NUM_RUNS = 5
+DEFAULT_NUM_RUNS = 10
 RUN_FILE = "framework.py"
 LOG_DIR_ROOT = "tests"
 agents = [
-    #"Qlearner",
-    #"KBQlearner",
+    "Qlearner",
+    "KBQlearner",
     #"IKBQlearner",
-    #"CBQlearner",
+    "CBQlearner"]
     #"SAQlearner",
     #"ISAQlearner",
     #"MSAQlearner",
     #"IMSAQlearner",
-    "TESTQlearner"]
-env = "CartPole-v1"
+    #"TESTQlearner"]
+env = "CartPole-v0"
 DEFAULT_NUM_ROLLOUTS = 1000
-DEFAULT_NUM_WORKERS = 1
+DEFAULT_NUM_WORKERS = 2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_runs', type=int, default=DEFAULT_NUM_RUNS)
@@ -40,7 +40,7 @@ start_datetime = parse_time_string(start_time)
 
 commands = []
 
-log_dir = "standard_test2"
+log_dir = "log_archive/random_cartpole"
 try:
     os.mkdir(log_dir)
 except:
@@ -56,7 +56,7 @@ for i in range(args.num_runs):
                 args.num_rollouts,
                 log_tf))
 
-log_dir = "random_test2"
+#log_dir = "random_test2"
 try:
     os.mkdir(log_dir)
 except:
