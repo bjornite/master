@@ -9,6 +9,7 @@ import os
 import json
 from shutil import copyfile
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner
+from modular_q_learning import ModularDQN
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -39,6 +40,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return TESTQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "Random_agent":
         return Random_agent(name, env, log_dir)
+    elif name == "ModularDQN":
+        return ModularDQN(name, env, log_dir, learning_rate, reg_beta)
     else:
         print("No agent type named {0}".format(name))
 
@@ -77,21 +80,13 @@ if __name__ == "__main__":
     returns = []
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
-    num_test_runs = 15
 
     print('Initializing agent')
-    try:
-        tf.get_default_session().close()
-    except AttributeError:
-        pass
-    sliding_target_updates = False
     agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta)
     stop_training = False
     if args.model is not "":
         agent.load_model(args.model)
-        stop_training=True
-    learning_rate = agent.model.learning_rate
-    reg_beta = agent.model.beta
+        stop_training = True
     if args.random_cartpole:
         args.envname = "CartPole-v1-random"
     print('Initialized')
@@ -110,74 +105,26 @@ if __name__ == "__main__":
             if args.random_cartpole and (state[0] > 0.2):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
-            #r = max(-1, min(1, r))
-            #if done and args.envname[:8] == "CartPole":
-            #    r = -1
-                # obs = np.zeros(env.observation_space.shape[0])
-
-            sars = (state,
-                    log_action,
-                    obs,
-                    r + random.random(),
-                    done)
+            sars = (state, log_action, obs, r, done)
+            agent.remember(sars)
             sarslist.append(sars)
-            agent.replay_memory.append(sars)
-
             state = obs
-            if len(agent.replay_memory) > agent.replay_memory_size:
-                agent.replay_memory.pop(0)
             totalr += r
             steps += 1
             if args.render:
                 env.render()
             if steps >= max_steps:
                 break
-            count = 0
-            if sliding_target_updates:
-                current_weights = agent.model.get_weights()
-                for w in agent.old_weights:
-                    agent.old_weights[count] = np.add(np.multiply(agent.old_weights[count], 0.999),
-                                                      np.multiply(current_weights[count], (1-0.999)))
-                    if agent.old_weights[count].shape[0] == 1:
-                        agent.old_weights[count] = agent.old_weights[count].reshape([-1])
-                    count += 1
-            elif global_steps % agent.target_update_freq == 0:
-                current_weights = agent.model.get_weights()
-                for w in agent.old_weights:
-                    agent.old_weights[count] = np.array(current_weights[count])
-                    if agent.old_weights[count].shape[0] == 1:
-                        agent.old_weights[count] = agent.old_weights[count].reshape([-1])
-                    count += 1
-            if len(agent.replay_memory) > agent.minibatch_size and not stop_training:
+            if not stop_training:
                 agent.train(args.no_tf_log)
                 global_steps += 1
         returns.append(totalr)
         if i % (args.num_rollouts / 10) == 0:
-            agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-        #if i % (args.num_rollouts / 100) == 0:
-            # totalr = 0.
-            # for j in range(num_test_runs):
-            #     state = env.reset()
-            #     action = env.action_space.sample()
-            #     obs, r, done, _ = env.step(action)
-            #     last_state = state
-            #     state = obs
-            #     while not done:
-            #         action = agent.get_action(state, is_test=True)
-            #         if args.random_cartpole and (state[0] > 0.2):
-            #             action = env.action_space.sample()
-            #         obs, r, done, _ = env.step(action)
-            #         if done and args.envname[:8] == "CartPole":
-            #             r = 0
-            #         last_state = state
-            #         state = obs
-            #         totalr += r
-            #         env.render()
-            # test_results.append(totalr / num_test_runs)
-            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.target_mean))
-        #else:
+            #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
+            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
         test_results.append(None)
-    agent.model.sess.close()
+    learning_rate = 0
+    reg_beta = 0
     log_data = pd.DataFrame()
     log_data["return"] = returns
     log_data["agent"] = [args.agentname]*len(log_data)

@@ -1,19 +1,11 @@
 from Agent import Agent
 from tf_neural_net import CBTfTwoLayerNet
+from tf_utils import LinearSchedule
 import numpy as np
 import random
 import copy
 import os
 import tensorflow as tf
-
-
-class LinearSchedule():
-    def __init__(self, start=1.0, steps=10000, stop=0.02):
-        self.func = lambda t: stop + (start - stop) * (float(max(0, steps - t)) / steps)
-
-    def eps(self, t):
-        return self.func(t)
-
 
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
@@ -112,6 +104,23 @@ class Qlearner(Agent):
                          targetActionMask,
                          normalization_factor,
                          no_tf_log)
+        # Update target network parameters
+        count = 0
+        if self.sliding_target_updates:
+            current_weights = self.model.get_weights()
+            for w in self.old_weights:
+                self.old_weights[count] = np.add(np.multiply(self.old_weights[count], 0.999),
+                                                 np.multiply(current_weights[count], (1-0.999)))
+                if self.old_weights[count].shape[0] == 1:
+                    self.old_weights[count] = self.old_weights[count].reshape([-1])
+                count += 1
+        elif self.training_steps % self.target_update_freq == 0:
+            current_weights = self.model.get_weights()
+            for w in self.old_weights:
+                self.old_weights[count] = np.array(current_weights[count])
+                if self.old_weights[count].shape[0] == 1:
+                    self.old_weights[count] = self.old_weights[count].reshape([-1])
+                count += 1
 
     def get_action(self, observation, is_test=False):
         if random.random() < self.random_action_prob and not is_test:
@@ -119,6 +128,11 @@ class Qlearner(Agent):
         else:
             values = self.model.predict([observation])
             return np.argmax(values[0])
+
+    def remember(self, sars):
+        self.replay_memory.append(sars)
+        if len(self.replay_memory) > self.replay_memory_size:
+            self.replay_memory.pop(0)
 
     def save_model(self, log_dir, filename):
         saver = tf.train.Saver()
