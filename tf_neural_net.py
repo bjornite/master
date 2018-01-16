@@ -236,6 +236,7 @@ class ModularNet(object):
         self.log_dir = log_dir
         with tf.variable_scope("inputs"):
             self.X = tf.placeholder("float", [None, self.n_input], name="state")
+            #self.mask = tf.placeholder("float", [self.n_input], name="mask")
             self.X_next = tf.placeholder("float", [None, self.n_input], name="obs")
             self.knowledge_reward = tf.placeholder("float", [None], name="knowledge_reward")
             self.targetActionMask = tf.placeholder(
@@ -248,6 +249,7 @@ class ModularNet(object):
     def make_graph_module(self, number):
         # Build required graph structure
         with tf.name_scope("module_{}".format(number)):
+            #maskedInput = tf.multiply(self.X, self.mask)
             Q = mlp(self.n_hiddens,
                     self.X,
                     self.n_output,

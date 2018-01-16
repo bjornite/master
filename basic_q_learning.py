@@ -162,7 +162,7 @@ class KBQlearner(Qlearner):
         max_knowledge_reward = np.max(knowledge_rewards)
         knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(self.minibatch_size):
-            targets[i] += 10 * knowledge_rewards[i]
+            targets[i] += knowledge_rewards[i]
         return targets
 
 class IKBQlearner(Qlearner):
