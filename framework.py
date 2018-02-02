@@ -8,7 +8,7 @@ import time
 import os
 import json
 from shutil import copyfile
-from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner
+from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, RQlearner
 from modular_q_learning import ModularDQN
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
@@ -28,6 +28,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return IKBQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "CBQlearner":
         return CBQlearner(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "RQlearner":
+        return RQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "SAQlearner":
         return SAQlearner(name, env, log_dir, learning_rate, reg_beta)
     elif name == "ISAQlearner":
@@ -102,7 +104,7 @@ if __name__ == "__main__":
         while not done:
             action = agent.get_action(state)
             log_action = action
-            if args.random_cartpole and (state[0] > 0.2):
+            if args.random_cartpole and (state[0] > 1.0):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
             sars = (state, log_action, obs, r, done)
@@ -112,16 +114,26 @@ if __name__ == "__main__":
             totalr += r
             steps += 1
             if args.render:
-                env.render()
+                img = env.render(mode="rgb_array")
+                if i == 3:
+                    import scipy
+                    scipy.misc.imsave('cartpole.png', img)
+                    #img[:, 325, :] = 0
+                    for i in range(len(img[:, 0, 0])):
+                        for j in range(len(img[0, :, 0])):
+                            for k in range(len(img[0, 0, :])):
+                                if j > 425 and img[i, j, k] == 255:
+                                    img[i, j, k] = 200
+                    scipy.misc.imsave('cartpolealtered.png', img)
             if steps >= max_steps:
                 break
             if not stop_training:
                 agent.train(args.no_tf_log)
                 global_steps += 1
         returns.append(totalr)
-        if i % (args.num_rollouts / 10) == 0:
+        #if i % (args.num_rollouts / 10) == 0:
             #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
+            #print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
         test_results.append(None)
     learning_rate = 0
     reg_beta = 0

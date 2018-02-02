@@ -75,14 +75,15 @@ class CBTfTwoLayerNet(object):
             # Prediction loss
             self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
                                             reduction_indices=[1])
+            _, self.pred_err_var = tf.nn.moments(self.pred_error, axes=[0])
             self.pred_loss = tf.reduce_mean(self.pred_error)
             self.pred_loss_regularized = (self.pred_loss) #TODO: regularization
         with tf.name_scope('error_prediction_loss_{}'.format(number)):
             self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
                                                                     self.knowledge_reward),
                                                         reduction_indices=[1])
-            self.error_prediction_loss = tf.reduce_mean(self.error_prediction_error)
-            self.error_prediction_loss_regularized = (tf.abs(self.error_prediction_loss)) #TODO: regularize
+            self.error_prediction_loss = tf.reduce_mean(tf.square(self.error_prediction_error))
+            self.error_prediction_loss_regularized = self.error_prediction_loss#TODO: regularize
         with tf.name_scope('policy_loss_{}'.format(number)):
             self.targetQ = tf.placeholder(tf.float32, [None], name="TargetQValues")
             self.q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
@@ -101,6 +102,7 @@ class CBTfTwoLayerNet(object):
         tf.summary.scalar('mean qvalue_error_{}'.format(number), self.qvalue_error)
         tf.summary.scalar('mean_policy_loss_{}'.format(number), self.policy_loss)
         tf.summary.scalar('mean_pred_error_{}'.format(number), self.pred_loss)
+        tf.summary.scalar('mean_pred_error_variance_{}'.format(number), self.pred_err_var)
         tf.summary.scalar('mean_q_value_{}'.format(number), tf.reduce_mean(self.q_values))
 
         with tf.name_scope('loss'):

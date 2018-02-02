@@ -6,6 +6,7 @@ import random
 import copy
 import os
 import tensorflow as tf
+import pickle
 
 class Qlearner(Agent):
     def __init__(self, name, env, log_dir, learning_rate, reg_beta):
@@ -21,7 +22,8 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 100, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, 10000, 0.02)
+        self.sliding_target_updates = False
         self.training_steps = 0
         self.gamma = 1.0
         self.tau = 0.01
@@ -41,6 +43,10 @@ class Qlearner(Agent):
         self.max_competence_reward = 0
         self.improvement_threshold = 0.2
         self.moving_average_uncertainties = 0
+        self.protolog = []
+        self.proto = [1.0, 0.1, 0, 0.1, 1]
+        self.crlog = []
+        self.bad = 0
 
     def make_reward(self,
                     r,
@@ -56,8 +62,13 @@ class Qlearner(Agent):
                 targets[i] += self.gamma*max_q_values[i]
         return targets
 
-    def train(self, no_tf_log):
-        data = random.sample(self.replay_memory, self.minibatch_size)
+    def train(self, no_tf_log, sars = None):
+        if len(self.replay_memory) < self.minibatch_size and sars == None:
+            return
+        if sars == None:
+            data = random.sample(self.replay_memory, self.minibatch_size)
+        else:
+            data = sars
         states = [m[0] for m in data]
         a = [m[1] for m in data]
         obs = [m[2] for m in data]
@@ -76,14 +87,22 @@ class Qlearner(Agent):
         knowledge_rewards = self.model.get_prediction_error(states,
                                                             targetActionMask,
                                                             obs)
-        max_knowledge_reward = np.max(knowledge_rewards)
-        if max_knowledge_reward > self.max_knowledge_reward:
-            self.max_knowledge_reward = max_knowledge_reward
-        normalized_knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
+        #max_knowledge_reward = np.max(knowledge_rewards)
+        #if max_knowledge_reward > self.max_knowledge_reward:
+        #    self.max_knowledge_reward = max_knowledge_reward
+        # normalized_knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
         competence_rewards = self.model.get_meta_prediction_error(states,
                                                                   targetActionMask,
-                                                                  normalized_knowledge_rewards,
+                                                                  knowledge_rewards,
                                                                   obs)
+        c = 0
+        for d in data:
+            if np.sum(np.square(np.subtract(d[0], self.proto[:4]))) < 1e-1 and d[1] == self.proto[4]:
+                if len(self.protolog) > 0 and knowledge_rewards[c] > self.protolog[-1]:
+                    self.bad += 1.0
+                self.protolog.append(knowledge_rewards[c])
+                self.crlog.append(competence_rewards[c])
+            c += 1
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
@@ -98,7 +117,7 @@ class Qlearner(Agent):
         self.random_action_prob = self.epsilon_schedule.eps(self.training_steps)
         self.training_steps += 1
         self.model.train(states,
-                         normalized_knowledge_rewards,
+                         knowledge_rewards,
                          obs,
                          targets,
                          targetActionMask,
@@ -142,7 +161,47 @@ class Qlearner(Agent):
         saver = tf.train.Saver()
         saver.restore(self.model.sess, filename)
 
-
+    def debug_string(self):
+        import matplotlib.pyplot as plt
+        import latexipy as lp
+        lp.latexify()  # Change to a serif font that fits with most LaTeX.
+        if self.protolog != []:
+            print("drawing error/mean/variance")
+            # Calculate moving average
+            avgs = [np.mean(self.protolog[i:i+10]) for i in range(len(self.protolog) - 10)]
+            # Calculate local variance
+            var = [np.std(self.protolog[i:i+10]) for i in range(len(self.protolog) - 10)]
+            with lp.figure("img2", size = lp.figure_size(n_columns=1)):
+                fig, ax1 = plt.subplots()
+                err, = ax1.plot(range(len(self.protolog)),
+                                self.protolog,
+                                label="Prediction error")
+                mean, = ax1.plot(range(len(avgs)),
+                                 avgs,
+                                 label="Moving average")
+                std, = ax1.plot(range(len(var)), var, label="Moving standard deviation")
+                ax2 = ax1.twinx()
+                cr, = ax2.plot(range(len(self.crlog)), self.crlog, 'r', label="Error prediction")
+                plt.xlabel("Number of times state has been seen")
+                plt.ylabel("Error magnitude")
+                plt.legend(handles=[err, mean, std, cr])
+            with lp.figure("img3", size=lp.figure_size(n_columns=1)):
+                fig, ax1 = plt.subplots()
+                err, = ax1.plot(range(len(self.protolog)-100, len(self.protolog)), self.protolog[-110:-10],
+                                label="Prediction error")
+                mean, = ax1.plot(range(len(self.protolog)-100, len(self.protolog)), avgs[-105:-5],
+                                 label="Moving average")
+                std, = ax1.plot(range(len(self.protolog)-100, len(self.protolog)), var[-105:-5],
+                                label="Moving standard deviation")
+                ax2 = ax1.twinx()
+                cr, = ax2.plot(range(len(self.crlog)-100, len(self.crlog)), self.crlog[-105:-5], 'r', label="Error prediction")
+                plt.xlabel("Number of times state has been seen")
+                plt.ylabel("Error magnitude")
+                plt.legend(handles=[err, mean, std, cr])
+            with open("{0}/protolog.pkl".format(self.log_dir), 'wb+') as f:
+                pickle.dump(self.protolog, f)
+            print(self.bad/(self.training_steps * self.minibatch_size))
+        return ""
 
 class KBQlearner(Qlearner):
 
@@ -159,10 +218,15 @@ class KBQlearner(Qlearner):
                                                       #base_q_values,
                                                       knowledge_rewards,
                                                       competence_rewards)
+        #if np.max(knowledge_rewards) > self.max_knowledge_reward:
         max_knowledge_reward = np.max(knowledge_rewards)
-        knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        normalized_knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        #avg = np.average(normalized_knowledge_rewards)
+        #normalized_knowledge_rewards = np.multiply(normalized_knowledge_rewards,
+        #                                           0.5/avg)
         for i in range(self.minibatch_size):
-            targets[i] += knowledge_rewards[i]
+           #if knowledge_rewards[i] > 0.1:
+            targets[i] += normalized_knowledge_rewards[i]
         return targets
 
 class IKBQlearner(Qlearner):
@@ -175,11 +239,11 @@ class IKBQlearner(Qlearner):
                     knowledge_rewards,
                     competence_rewards):
         targets = super(IKBQlearner, self).make_reward(r,
-                                                      done,
-                                                      max_q_values,
-                                                      #base_q_values,
-                                                      knowledge_rewards,
-                                                      competence_rewards)
+                                                       done,
+                                                       max_q_values,
+                                                       #base_q_values,
+                                                       knowledge_rewards,
+                                                       competence_rewards)
         max_knowledge_reward = np.max(knowledge_rewards)
         knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
         for i in range(self.minibatch_size):
@@ -202,11 +266,35 @@ class CBQlearner(Qlearner):
                                                       knowledge_rewards,
                                                       competence_rewards)
         cp_comprew = copy.copy(competence_rewards)
+        #if np.max(np.abs(cp_comprew)) > self.max_competence_reward:
         max_competence_reward = np.max(np.abs(cp_comprew))
-        competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
+        normalized_competence_rewards = [cr/max_competence_reward for cr in competence_rewards]
+        #avg = np.average(np.abs(normalized_competence_rewards))
+        #normalized_competence_rewards = np.multiply(normalized_competence_rewards,
+        #                                            0.5/avg)
         for i in range(self.minibatch_size):
-            if competence_rewards[i] > 0 and not done[i]:
-                targets[i] += competence_rewards[i]
+            if competence_rewards[i] > 0.1 and not done[i]:
+                targets[i] += normalized_competence_rewards[i]
+        return targets
+
+class RQlearner(Qlearner):
+
+    def make_reward(self,
+                    r,
+                    done,
+                    max_q_values,
+                    #base_q_values,
+                    knowledge_rewards,
+                    competence_rewards):
+        targets = super(RQlearner, self).make_reward(r,
+                                                      done,
+                                                      max_q_values,
+                                                      #base_q_values,
+                                                      knowledge_rewards,
+                                                      competence_rewards)
+        for i in range(self.minibatch_size):
+            if not done[i]:
+                targets[i] += random.random()
         return targets
 
 class SAQlearner(Qlearner):
@@ -269,15 +357,31 @@ class IMSAQlearner(Qlearner):
 
 class TESTQlearner(Qlearner):
 
-    def get_action(self, observation, is_test=False):
-        # Return action causing average uncertainty
-        if random.random() < self.random_action_prob and not is_test:
-            return self.action_space.sample()
-        else:
-            q_values = self.model.predict([observation])
-            uncertainties = self.model.get_q_value_uncertainty([observation])
-            max_estimate = q_values + uncertainties * self.random_action_prob
-            return np.argmax(max_estimate)
+    def make_reward(self,
+                    r,
+                    done,
+                    max_q_values,
+                    #base_q_values,
+                    knowledge_rewards,
+                    competence_rewards):
+        targets = super(CBQlearner, self).make_reward(r,
+                                                      done,
+                                                      max_q_values,
+                                                      #base_q_values,
+                                                      knowledge_rewards,
+                                                      competence_rewards)
+        cp_comprew = copy.copy(competence_rewards)
+        if np.max(np.abs(cp_comprew)) > self.max_competence_reward:
+            self.max_competence_reward = np.max(np.abs(cp_comprew))
+        normalized_competence_rewards = [cr/self.max_competence_reward for cr in competence_rewards]
+        rews = np.multiply(knowledge_rewards, normalized_competence_rewards)
+        #avg = np.average(np.abs(normalized_competence_rewards))
+        #normalized_competence_rewards = np.multiply(normalized_competence_rewards,
+        #                                            0.5/avg)
+        for i in range(self.minibatch_size):
+            if competence_rewards[i] > 0 and not done[i]:
+                targets[i] += rews[i]
+        return targets
 
 class Random_agent(Agent):
     def get_action(self, input, is_test=False):

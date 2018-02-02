@@ -42,7 +42,7 @@ if __name__=="__main__":
     if args.agentname != []:
         df = df.loc[df['agent'].isin(args.agentname)]
     #df.plot()
-    df = df.loc[df['iteration'] <= 600]
+    #df = df.loc[df['iteration'] <= 600]
     import latexipy as lp
     lp.latexify()  # Change to a serif font that fits with most LaTeX.
     if log_dir[-1] is not '/':
@@ -55,8 +55,9 @@ if __name__=="__main__":
                    value="return",
                    condition=args.condition,
                    unit="run",
-                   ci="sd",
-                   #err_style="unit_traces",
+                   #ci=[25, 50, 75],
+                   err_style="ci_band",
                    estimator=np.nanmean)
+                   #estimator=np.nanmean)
         plt.ylim([0, 210])
         plt.xlabel("Episode")
