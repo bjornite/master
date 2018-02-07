@@ -107,11 +107,13 @@ if __name__ == "__main__":
             if args.random_cartpole and (state[0] > 1.0):
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
+            totalr += r
+            if steps % 100 != 0 or steps == 0:
+                r = 0
             sars = (state, log_action, obs, r, done)
             agent.remember(sars)
             sarslist.append(sars)
             state = obs
-            totalr += r
             steps += 1
             if args.render:
                 img = env.render(mode="rgb_array")

@@ -55,9 +55,9 @@ if __name__=="__main__":
                    value="return",
                    condition=args.condition,
                    unit="run",
-                   #ci=[25, 50, 75],
+                   ci=[5, 50, 90],
                    err_style="ci_band",
                    estimator=np.nanmean)
                    #estimator=np.nanmean)
-        plt.ylim([0, 210])
+        #plt.ylim([0, 210])
         plt.xlabel("Episode")

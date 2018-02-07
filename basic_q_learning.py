@@ -22,7 +22,7 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 10000, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, 1, 0.02)
         self.sliding_target_updates = False
         self.training_steps = 0
         self.gamma = 1.0
@@ -95,14 +95,14 @@ class Qlearner(Agent):
                                                                   targetActionMask,
                                                                   knowledge_rewards,
                                                                   obs)
-        c = 0
-        for d in data:
-            if np.sum(np.square(np.subtract(d[0], self.proto[:4]))) < 1e-1 and d[1] == self.proto[4]:
-                if len(self.protolog) > 0 and knowledge_rewards[c] > self.protolog[-1]:
-                    self.bad += 1.0
-                self.protolog.append(knowledge_rewards[c])
-                self.crlog.append(competence_rewards[c])
-            c += 1
+        #c = 0
+        #for d in data:
+        #    if np.sum(np.square(np.subtract(d[0], self.proto[:4]))) < 1e-1 and d[1] == self.proto[4]:
+        #        if len(self.protolog) > 0 and knowledge_rewards[c] > self.protolog[-1]:
+        #            self.bad += 1.0
+        #        self.protolog.append(knowledge_rewards[c])
+        #        self.crlog.append(competence_rewards[c])
+        #    c += 1
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
@@ -273,7 +273,7 @@ class CBQlearner(Qlearner):
         #normalized_competence_rewards = np.multiply(normalized_competence_rewards,
         #                                            0.5/avg)
         for i in range(self.minibatch_size):
-            if competence_rewards[i] > 0.1 and not done[i]:
+            if competence_rewards[i] > 0 and not done[i]:
                 targets[i] += normalized_competence_rewards[i]
         return targets
 
