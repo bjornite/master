@@ -133,9 +133,9 @@ if __name__ == "__main__":
                 agent.train(args.no_tf_log)
                 global_steps += 1
         returns.append(totalr)
-        #if i % (args.num_rollouts / 10) == 0:
+        if i % (args.num_rollouts / 10) == 0:
             #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-            #print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
+            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
         test_results.append(None)
     learning_rate = 0
     reg_beta = 0

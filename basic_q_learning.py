@@ -161,7 +161,7 @@ class Qlearner(Agent):
         saver = tf.train.Saver()
         saver.restore(self.model.sess, filename)
 
-    def debug_string(self):
+    def plot_state_visits(self):
         import matplotlib.pyplot as plt
         import latexipy as lp
         lp.latexify()  # Change to a serif font that fits with most LaTeX.
@@ -201,6 +201,8 @@ class Qlearner(Agent):
             with open("{0}/protolog.pkl".format(self.log_dir), 'wb+') as f:
                 pickle.dump(self.protolog, f)
             print(self.bad/(self.training_steps * self.minibatch_size))
+
+    def debug_string(self):
         return ""
 
 class KBQlearner(Qlearner):
