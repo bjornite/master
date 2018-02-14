@@ -18,7 +18,7 @@ DEFAULT_LEARNING_RATE=1e-3
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_runs', type=int, default=DEFAULT_NUM_RUNS)
 parser.add_argument('--agentname', type=str, nargs="*", default=[DEFAULT_AGENT])
-parser.add_argument('--envname', type=str, default=DEFAULT_ENV)
+parser.add_argument('--envname', type=str, nargs="*", default=[DEFAULT_ENV])
 parser.add_argument('--render', action='store_true')
 parser.add_argument("--max_timesteps", type=int)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
