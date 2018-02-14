@@ -40,18 +40,18 @@ except:
 
 commands = []
 
-for agent in args.agentname:
-    for i in range(args.num_runs):
-        commands.append(
-            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6}".format(
-                RUN_FILE,
-                agent,
-                args.envname,
-                args.log_dir,
-                args.num_rollouts,
-                log_tf,
-                args.learning_rate))
-    #commands.append("python -m baselines.deepq.experiments.train_cartpole")
+for env in args.envname:
+    for agent in args.agentname:
+        for i in range(args.num_runs):
+            commands.append(
+                "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6}".format(
+                    RUN_FILE,
+                    agent,
+                    env,
+                    args.log_dir,
+                    args.num_rollouts,
+                    log_tf,
+                    args.learning_rate))
 
 pool = Pool(args.num_workers)  # two concurrent commands at a time
 for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):
