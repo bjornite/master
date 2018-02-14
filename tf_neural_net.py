@@ -267,6 +267,13 @@ class ModularNet(object):
                              self.use_batch_norm,
                              self.use_dropout,
                              self.keep_prob)
+            error_prediction = mlp([64],
+                                   inputAndAction,
+                                   1,
+                                   "module_{}_error_prediction".format(number),
+                                   self.use_batch_norm,
+                                   self.use_dropout,
+                                   self.keep_prob)
 
             weightnames = [x.name for x in
                            tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -280,11 +287,16 @@ class ModularNet(object):
                                            reduction_indices=[1])
                 pred_loss = tf.reduce_mean(pred_error)
                 pred_loss_regularized = (pred_loss) #TODO: regularization
+            with tf.name_scope('error_prediction_loss_{}'.format(number)):
+                error_prediction_error = tf.reduce_sum(tf.subtract(error_prediction,
+                                                                   self.knowledge_reward),
+                                                       reduction_indices=[1])
+                error_prediction_loss = tf.reduce_mean(tf.square(error_prediction_error))
+                error_prediction_loss_regularized = error_prediction_loss#TODO: regularize
 
             with tf.variable_scope('policy_loss_{}'.format(number)):
                 q_values = tf.reduce_sum(tf.multiply(Q, self.targetActionMask),
                                          reduction_indices=[1])
-
                 diff = tf.subtract(q_values, self.targetQ)
                 if self.use_huber_loss:
                     qvalue_error = tf.reduce_mean(tf.where(tf.abs(diff) < 1.0,
@@ -300,12 +312,13 @@ class ModularNet(object):
             tf.summary.scalar('mean_q_value_{}'.format(number), tf.reduce_mean(q_values))
 
             with tf.variable_scope('loss'):
-                loss = (policy_loss + pred_loss_regularized)
+                loss = (policy_loss + pred_loss_regularized + error_prediction_loss_regularized)
 
             optimizer = tf.train.AdamOptimizer(self.learning_rate)
             local_step = tf.Variable(0, name='local_step', trainable=False)
 
-            var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                         scope="module_{}".format(number))
             # Compute the gradients for a list of variables.
             gradients = optimizer.compute_gradients(loss, var_list)
             grads = []
@@ -340,7 +353,7 @@ class ModularNet(object):
             #print(new_vars)
             #self.sess.run(tf.variables_initializer(new_vars))
             # Return functions for the necessary operations
-            return Q, train_op, merged, local_step, pred_error, weights, self.train_writer
+            return Q, train_op, merged, local_step, pred_error, error_prediction_error, weights, self.train_writer
 
     def init(self):
         init = tf.variables_initializer(tf.global_variables())
@@ -349,7 +362,7 @@ class ModularNet(object):
                                                   self.sess.graph)
 
     def make_module(self, number):
-        Q, train_op, merged, local_step, pred_error, weights, train_writer = self.make_graph_module(number)
+        Q, train_op, merged, local_step, pred_error, error_prediction_error, weights, train_writer = self.make_graph_module(number)
 
         def predict(self, x, input_weights=None):
             # Calculate prediction and ecoding
@@ -385,6 +398,14 @@ class ModularNet(object):
             return self.sess.run(pred_error,
                                  feed_dict=feed_dict)
 
+        def get_meta_prediction_error(self, x, a, knowledge_rewards, x_next):
+            feed_dict = {self.X: x,
+                         self.targetActionMask: a,
+                         self.knowledge_reward: np.array(knowledge_rewards),
+                         self.X_next: x_next}
+            return self.sess.run(error_prediction_error,
+                                 feed_dict=feed_dict)
+        
         def get_weights(self):
             return self.sess.run(weights)
 
@@ -394,4 +415,4 @@ class ModularNet(object):
             for name, value in feed_dict.items():
                 self.sess.run(tf.assign(name, value))
 
-        return self, predict, train, get_prediction_error, get_weights, assign_weights
+        return self, predict, train, get_prediction_error, get_meta_prediction_error, get_weights, assign_weights

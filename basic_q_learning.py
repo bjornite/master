@@ -22,7 +22,7 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 1, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, 10000, 0.02)
         self.sliding_target_updates = False
         self.training_steps = 0
         self.gamma = 1.0
@@ -35,7 +35,7 @@ class Qlearner(Agent):
         self.observations = []
         self.actions = []
         self.replay_memory = []
-        self.replay_memory_size = 50000
+        self.replay_memory_size = 1000000
         self.minibatch_size = 32
         self.old_weights = self.model.get_weights()
         self.target_update_freq = 500
@@ -87,10 +87,6 @@ class Qlearner(Agent):
         knowledge_rewards = self.model.get_prediction_error(states,
                                                             targetActionMask,
                                                             obs)
-        #max_knowledge_reward = np.max(knowledge_rewards)
-        #if max_knowledge_reward > self.max_knowledge_reward:
-        #    self.max_knowledge_reward = max_knowledge_reward
-        # normalized_knowledge_rewards = [kr/self.max_knowledge_reward for kr in knowledge_rewards]
         competence_rewards = self.model.get_meta_prediction_error(states,
                                                                   targetActionMask,
                                                                   knowledge_rewards,
@@ -106,7 +102,6 @@ class Qlearner(Agent):
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
-                                   # base_q_values,
                                    knowledge_rewards,
                                    competence_rewards)
         for target in targets:

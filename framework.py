@@ -9,7 +9,7 @@ import os
 import json
 from shutil import copyfile
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, RQlearner
-from modular_q_learning import ModularDQN
+from modular_q_learning import ModularDQN, CBModularDQN
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -44,6 +44,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return Random_agent(name, env, log_dir)
     elif name == "ModularDQN":
         return ModularDQN(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "CBModularDQN":
+        return CBModularDQN(name, env, log_dir, learning_rate, reg_beta)
     else:
         print("No agent type named {0}".format(name))
 
@@ -108,9 +110,12 @@ if __name__ == "__main__":
                 action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
             totalr += r
-            if steps % 100 != 0 or steps == 0:
-                r = 0
-            sars = (state, log_action, obs, r, done)
+            #if steps % 100 != 0 or steps == 0:
+            #    r = 0
+            if args.random_cartpole and (state[0] > 1.0):
+                sars = (state, log_action, obs + np.random.rand(len(obs)), r, done)
+            else:
+                sars = (state, log_action, obs, r, done)
             agent.remember(sars)
             sarslist.append(sars)
             state = obs

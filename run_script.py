@@ -43,7 +43,7 @@ commands = []
 for agent in args.agentname:
     for i in range(args.num_runs):
         commands.append(
-            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --random_cartpole --learning_rate={6}".format(
+            "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6}".format(
                 RUN_FILE,
                 agent,
                 args.envname,
