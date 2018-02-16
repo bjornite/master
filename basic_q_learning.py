@@ -1,6 +1,7 @@
 from Agent import Agent
 from tf_neural_net import CBTfTwoLayerNet
 from tf_utils import LinearSchedule
+from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 import numpy as np
 import random
 import copy
@@ -22,8 +23,9 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 10000, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, 1, 0.02)
         self.sliding_target_updates = False
+        self.prioritized_replay = True
         self.training_steps = 0
         self.gamma = 1.0
         self.tau = 0.01
@@ -34,8 +36,14 @@ class Qlearner(Agent):
         self.v = 0
         self.observations = []
         self.actions = []
-        self.replay_memory = []
         self.replay_memory_size = 1000000
+        self.prioritized_replay_alpha = 0.6
+        self.prioritized_replay_eps = 1e-6
+        if self.prioritized_replay:
+            self.replay_memory = PrioritizedReplayBuffer(self.replay_memory_size,
+                                                         self.prioritized_replay_alpha)
+        else:
+            self.replay_memory = ReplayBuffer(self.replay_memory_size)
         self.minibatch_size = 32
         self.old_weights = self.model.get_weights()
         self.target_update_freq = 500
@@ -62,18 +70,17 @@ class Qlearner(Agent):
                 targets[i] += self.gamma*max_q_values[i]
         return targets
 
-    def train(self, no_tf_log, sars = None):
-        if len(self.replay_memory) < self.minibatch_size and sars == None:
+    def make_priorities(self, td_errors, kb_rew, cb_rew):
+        return np.abs(td_errors) + self.prioritized_replay_eps
+
+    def train(self, no_tf_log):
+        if self.replay_memory.length() < self.minibatch_size:
             return
-        if sars == None:
-            data = random.sample(self.replay_memory, self.minibatch_size)
+        if self.prioritized_replay:
+            states, a, obs, r, done, weights, batch_idxes = self.replay_memory.sample(self.minibatch_size, 0.5)
         else:
-            data = sars
-        states = [m[0] for m in data]
-        a = [m[1] for m in data]
-        obs = [m[2] for m in data]
-        r = [m[3] for m in data]
-        done = [m[4] for m in data]
+            states, a, obs, r, done = self.replay_memory.sample(self.minibatch_size)
+
         targetActionMask = np.zeros(
                         (self.minibatch_size, self.action_space.n), dtype=int)
         for i in range(self.minibatch_size):
@@ -111,14 +118,17 @@ class Qlearner(Agent):
         normalization_factor = 1/(self.target_sigma*self.target_sigma)
         self.random_action_prob = self.epsilon_schedule.eps(self.training_steps)
         self.training_steps += 1
-        self.model.train(states,
-                         knowledge_rewards,
-                         obs,
-                         targets,
-                         targetActionMask,
-                         normalization_factor,
-                         no_tf_log)
+        td_errors = self.model.train(states,
+                                     knowledge_rewards,
+                                     obs,
+                                     targets,
+                                     targetActionMask,
+                                     normalization_factor,
+                                     no_tf_log)
         # Update target network parameters
+        if self.prioritized_replay:
+            new_priorities = self.make_priorities(td_errors, knowledge_rewards, competence_rewards)
+            self.replay_memory.update_priorities(batch_idxes, new_priorities)
         count = 0
         if self.sliding_target_updates:
             current_weights = self.model.get_weights()
@@ -143,10 +153,8 @@ class Qlearner(Agent):
             values = self.model.predict([observation])
             return np.argmax(values[0])
 
-    def remember(self, sars):
-        self.replay_memory.append(sars)
-        if len(self.replay_memory) > self.replay_memory_size:
-            self.replay_memory.pop(0)
+    def remember(self, s, a, r, stp1, d):
+        self.replay_memory.add(s, a, r, stp1, d)
 
     def save_model(self, log_dir, filename):
         saver = tf.train.Saver()
@@ -226,6 +234,9 @@ class KBQlearner(Qlearner):
             targets[i] += normalized_knowledge_rewards[i]
         return targets
 
+    #def make_priorities(self, td_errors, kb_rew, cb_rew):
+    #    return np.abs(kb_rew) + self.prioritized_replay_eps
+
 class IKBQlearner(Qlearner):
 
     def make_reward(self,
@@ -293,6 +304,9 @@ class RQlearner(Qlearner):
             if not done[i]:
                 targets[i] += random.random()
         return targets
+
+   # def make_priorities(self, td_errors, kb_rew, cb_rew):
+   #     return np.abs(cb_rew) + self.prioritized_replay_eps
 
 class SAQlearner(Qlearner):
 

@@ -116,7 +116,7 @@ if __name__ == "__main__":
                 sars = (state, log_action, obs + np.random.rand(len(obs)), r, done)
             else:
                 sars = (state, log_action, obs, r, done)
-            agent.remember(sars)
+            agent.remember(state, log_action, r, obs, done)
             sarslist.append(sars)
             state = obs
             steps += 1

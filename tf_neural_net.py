@@ -89,13 +89,13 @@ class CBTfTwoLayerNet(object):
             self.q_values = tf.reduce_sum(tf.multiply(self.Q, self.targetActionMask),
                                           reduction_indices=[1])
 
-            diff = tf.subtract(self.q_values, self.targetQ)
+            self.td_errors = tf.subtract(self.q_values, self.targetQ)
             if self.use_huber_loss:
-                self.qvalue_error = tf.reduce_mean(tf.where(tf.abs(diff) < 1.0,
-                                                            tf.square(diff)*0.5,
-                                                            tf.abs(diff) - 0.5))
+                self.qvalue_error = tf.reduce_mean(tf.where(tf.abs(self.td_errors) < 1.0,
+                                                            tf.square(self.td_errors)*0.5,
+                                                            tf.abs(self.td_errors) - 0.5))
             else:
-                self.qvalue_error = tf.reduce_mean(tf.square(diff))
+                self.qvalue_error = tf.reduce_mean(tf.square(self.td_errors))
             self.policy_loss = (self.qvalue_error)  # TODO: Regularize
 
         tf.summary.scalar('mean_meta_error_{}'.format(number), self.error_prediction_loss)
@@ -184,13 +184,14 @@ class CBTfTwoLayerNet(object):
                      self.targetQ: targetQ,
                      self.targetActionMask: targetActionMask,
                      self.norm_factor: normalization_factor}
-        opt, summary, global_step = self.sess.run([self.train_op,
-                                                   self.merged,
-                                                   self.global_step],
+        opt, summary, global_step, td_errors = self.sess.run([self.train_op,
+                                                              self.merged,
+                                                              self.global_step,
+                                                              self.td_errors],
                                                   feed_dict=feed_dict)
         if global_step % 100 == 0 and not no_tf_log:
             self.train_writer.add_summary(summary, global_step)
-        return
+        return td_errors
 
     def get_prediction_error(self, x, a, x_next):
         feed_dict = {self.X: x,
@@ -297,13 +298,13 @@ class ModularNet(object):
             with tf.variable_scope('policy_loss_{}'.format(number)):
                 q_values = tf.reduce_sum(tf.multiply(Q, self.targetActionMask),
                                          reduction_indices=[1])
-                diff = tf.subtract(q_values, self.targetQ)
+                td_errors = tf.subtract(q_values, self.targetQ)
                 if self.use_huber_loss:
-                    qvalue_error = tf.reduce_mean(tf.where(tf.abs(diff) < 1.0,
-                                                           tf.square(diff)*0.5,
-                                                           tf.abs(diff) - 0.5))
+                    qvalue_error = tf.reduce_mean(tf.where(tf.abs(td_errors) < 1.0,
+                                                           tf.square(td_errors)*0.5,
+                                                           tf.abs(td_errors) - 0.5))
                 else:
-                    qvalue_error = tf.reduce_mean(tf.square(diff))
+                    qvalue_error = tf.reduce_mean(tf.square(td_errors))
                 policy_loss = (qvalue_error)  # TODO: Regularize
 
             tf.summary.scalar('mean qvalue_error_{}'.format(number), qvalue_error)
@@ -384,12 +385,14 @@ class ModularNet(object):
                          self.targetQ: targetQ,
                          self.targetActionMask: targetActionMask,
                          self.norm_factor: normalization_factor}
-            opt, summary, step = self.sess.run([train_op,
-                                                merged,
-                                                local_step],
-                                               feed_dict=feed_dict)
+            opt, summary, step, td_errors = self.sess.run([train_op,
+                                                           merged,
+                                                           local_step,
+                                                           tf_errors],
+                                                          feed_dict=feed_dict)
             if step % 100 == 0 and not no_tf_log:
                 train_writer.add_summary(summary, step)
+            return td_errors
 
         def get_prediction_error(self, x, a, x_next):
             feed_dict = {self.X: x,
