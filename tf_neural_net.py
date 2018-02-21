@@ -35,7 +35,7 @@ class CBTfTwoLayerNet(object):
             config = tf.ConfigProto(
                 device_count={'GPU': 0}
             )
-            config.gpu_options.per_process_gpu_memory_fraction = 0.4
+            #config.gpu_options.per_process_gpu_memory_fraction = 0.4
             self.sess = tf.Session(config=config)
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.norm_factor = tf.placeholder("float", shape=())
@@ -232,7 +232,7 @@ class ModularNet(object):
             config = tf.ConfigProto(
                 device_count={'GPU': 0}
             )
-            config.gpu_options.per_process_gpu_memory_fraction = 0.4
+            #config.gpu_options.per_process_gpu_memory_fraction = 0.4
             self.sess = tf.Session(config=config)
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.norm_factor = tf.placeholder("float", shape=())

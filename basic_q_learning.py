@@ -25,7 +25,7 @@ class Qlearner(Agent):
                                      self.log_dir)
         self.epsilon_schedule = LinearSchedule(1.0, 1000, 0.02)
         self.sliding_target_updates = False
-        self.prioritized_replay = True
+        self.prioritized_replay = False
         self.training_steps = 0
         self.gamma = 1.0
         self.tau = 0.01
@@ -125,10 +125,10 @@ class Qlearner(Agent):
                                      targetActionMask,
                                      normalization_factor,
                                      no_tf_log)
-        # Update target network parameters
         if self.prioritized_replay:
             new_priorities = self.make_priorities(td_errors, knowledge_rewards, competence_rewards)
             self.replay_memory.update_priorities(batch_idxes, new_priorities)
+        # Update target network parameters
         count = 0
         if self.sliding_target_updates:
             current_weights = self.model.get_weights()
@@ -307,6 +307,8 @@ class RQlearner(Qlearner):
 
    # def make_priorities(self, td_errors, kb_rew, cb_rew):
    #     return np.abs(cb_rew) + self.prioritized_replay_eps
+
+
 
 class SAQlearner(Qlearner):
 

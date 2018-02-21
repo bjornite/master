@@ -50,7 +50,7 @@ class MountainCarEnv(gym.Env):
 
         self.state = (position, velocity)
         if position < -0.3 and position > -0.6:
-            return np.array(self.state) + [0.5*(np.random.random()-1), 0], reward, done, {}
+            return np.array(self.state) + [0.1*(np.random.random()-0.5), 0], reward, done, {}
         return np.array(self.state), reward, done, {}
 
     def _reset(self):

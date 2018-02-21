@@ -12,7 +12,7 @@ class Module():
     def __init__(self, n_actions, args):
         self.net, self.predict, self.train_network, self.get_prediction_error, self.get_meta_prediction_error, self.get_weights, self.assign_weights = args
         self.sliding_target_updates = False
-        self.prioritized_replay = True
+        self.prioritized_replay = False
         self.training_steps = 0
         self.global_steps = 0
         self.gamma = 1.0
@@ -52,7 +52,7 @@ class Module():
 
     def make_priorities(self, td_errors, kb_rew, cb_rew):
         return np.abs(td_errors) + self.prioritized_replay_eps
-    
+
     def train(self, no_tf_log):
         if self.replay_memory.length() < self.minibatch_size:
             return
@@ -147,7 +147,7 @@ class ModularDQN(Agent):
         config = tf.ConfigProto(
             device_count={'GPU': 0}
             )
-        config.gpu_options.per_process_gpu_memory_fraction = 0.4
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.4
         self.sess = tf.Session(config=config)
         self.model = ModularNet(inputsize,
                                 self.action_space.n,
@@ -227,6 +227,7 @@ class CBModularDQN(ModularDQN):
         new_module = CBModule(self.action_space.n, self.model.make_module(len(self.modules)))
         self.active_module_counter.append(0)
         self.modules.append(new_module)
+
 
 class ThompsonMDQN(ModularDQN):
 
