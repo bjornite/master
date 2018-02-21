@@ -46,6 +46,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return ModularDQN(name, env, log_dir, learning_rate, reg_beta)
     elif name == "CBModularDQN":
         return CBModularDQN(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "ThompsonMDQN":
+        return ThompsonMDQN(name, env, log_dir, learning_rate, reg_beta)
     else:
         print("No agent type named {0}".format(name))
 
