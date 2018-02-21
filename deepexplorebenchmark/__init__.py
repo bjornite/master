@@ -7,13 +7,13 @@ register(
 )
 
 register(
-    id='MountainCarStochasticArea-v0',
-    entry_point='mountaincarstochasticarea.mountaincarstochasticarea:MountainCarEnv',
+    id='CartPoleStochasticArea-v0',
+    entry_point='cartpolestochasticarea.cartpolestochasticarea:CartPoleEnv',
     tags={'wrapper_config.TimeLimit.max_episode_steps': 200},
 )
 
 register(
-    id='CartPoleStochasticArea-v0',
-    entry_point='cartpolestochasticarea.cartpolestochasticarea:CartPoleEnv',
+    id='MountainCarStochasticArea-v0',
+    entry_point='mountaincarstochasticarea.mountaincarstochasticarea:MountainCarEnv',
     tags={'wrapper_config.TimeLimit.max_episode_steps': 200},
 )

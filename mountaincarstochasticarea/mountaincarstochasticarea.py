@@ -30,7 +30,6 @@ class MountainCarEnv(gym.Env):
         self.observation_space = spaces.Box(self.low, self.high)
 
         self._seed()
-        self.reset()
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -50,7 +49,7 @@ class MountainCarEnv(gym.Env):
         reward = -1.0
 
         self.state = (position, velocity)
-        if position < -0.3:
+        if position < -0.5:
             return np.array(self.state) + [0.5*(np.random.random()-1), 0], reward, done, {}
         return np.array(self.state), reward, done, {}
 
