@@ -72,11 +72,19 @@ class CBTfTwoLayerNet(object):
         self.weightnames = [x.name for x in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES) if x.name.endswith('weights:0')]
         self.weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         with tf.name_scope('prediction_loss_{}'.format(number)):
-            # Prediction loss
-            self.pred_error = tf.reduce_sum(tf.square(tf.subtract(self.prediction, self.X_next)),
-                                            reduction_indices=[1])
+            # Euclidean distance for each prediction
+            self.pred_error = tf.sqrt(
+                tf.reduce_sum(
+                    tf.square(
+                        tf.subtract(self.prediction, self.X_next)),
+                    reduction_indices=[1]))
             _, self.pred_err_var = tf.nn.moments(self.pred_error, axes=[0])
-            self.pred_loss = tf.reduce_mean(self.pred_error)
+            # Prediction loss
+            self.pred_loss = tf.reduce_mean(
+                tf.reduce_sum(
+                    tf.square(
+                        tf.subtract(self.prediction, self.X_next)),
+                reduction_indices=[1]))
             self.pred_loss_regularized = (self.pred_loss) #TODO: regularization
         with tf.name_scope('error_prediction_loss_{}'.format(number)):
             self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
@@ -203,7 +211,7 @@ class CBTfTwoLayerNet(object):
     def get_meta_prediction_error(self, x, a, knowledge_rewards, x_next):
         feed_dict = {self.X: x,
                      self.targetActionMask: a,
-                     self.knowledge_reward: np.array(knowledge_rewards),
+                     self.knowledge_reward: knowledge_rewards,
                      self.X_next: x_next}
         return self.sess.run(self.error_prediction_error,
                              feed_dict=feed_dict)

@@ -130,6 +130,7 @@ if __name__ == "__main__":
                 global_steps += 1
         returns.append(totalr)
         if i % (args.num_rollouts / 10) == 0:
+            agent.plot_state_visits()
             #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
             print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
         test_results.append(None)

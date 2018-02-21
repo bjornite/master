@@ -52,7 +52,7 @@ class Qlearner(Agent):
         self.improvement_threshold = 0.2
         self.moving_average_uncertainties = 0
         self.protolog = []
-        self.proto = [1.0, 0.1, 0, 0.1, 1]
+        self.proto = [0, 0.1, 0, 0.1, 1]
         self.crlog = []
         self.bad = 0
 
@@ -98,14 +98,14 @@ class Qlearner(Agent):
                                                                   targetActionMask,
                                                                   knowledge_rewards,
                                                                   obs)
-        #c = 0
-        #for d in data:
-        #    if np.sum(np.square(np.subtract(d[0], self.proto[:4]))) < 1e-1 and d[1] == self.proto[4]:
-        #        if len(self.protolog) > 0 and knowledge_rewards[c] > self.protolog[-1]:
-        #            self.bad += 1.0
-        #        self.protolog.append(knowledge_rewards[c])
-        #        self.crlog.append(competence_rewards[c])
-        #    c += 1
+        c = 0
+        for i in range(len(states)):
+            if np.sum(np.square(np.subtract(states[i], self.proto[:4]))) < 1e-1 and a[i] == self.proto[4]:
+                if len(self.protolog) > 0 and knowledge_rewards[i] > self.protolog[-1]:
+                    self.bad += 1.0
+                self.protolog.append(knowledge_rewards[i])
+                self.crlog.append(competence_rewards[i])
+            c += 1
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
