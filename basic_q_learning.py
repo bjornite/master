@@ -23,7 +23,7 @@ class Qlearner(Agent):
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 1, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, 1000, 0.02)
         self.sliding_target_updates = False
         self.prioritized_replay = True
         self.training_steps = 0

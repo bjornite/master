@@ -64,7 +64,6 @@ if __name__ == "__main__":
     parser.add_argument('envname', type=str)
     parser.add_argument('--log_dir_root', type=str, default="logfiles")
     parser.add_argument('--render', action='store_true')
-    parser.add_argument('--random_cartpole', action='store_true')
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20)
     parser.add_argument('--num_runs', type=int, default=1)
@@ -91,8 +90,6 @@ if __name__ == "__main__":
     if args.model is not "":
         agent.load_model(args.model)
         stop_training = True
-    if args.random_cartpole:
-        args.envname = "CartPole-v1-random"
     print('Initialized')
     sarslist = []
     test_results = []
@@ -105,18 +102,10 @@ if __name__ == "__main__":
         mean_cb_r = 0
         while not done:
             action = agent.get_action(state)
-            log_action = action
-            if args.random_cartpole and (state[0] > 1.0):
-                action = env.action_space.sample()
             obs, r, done, _ = env.step(action)
             totalr += r
-            #if steps % 100 != 0 or steps == 0:
-            #    r = 0
-            if args.random_cartpole and (state[0] > 1.0):
-                sars = (state, log_action, obs + np.random.rand(len(obs)), r, done)
-            else:
-                sars = (state, log_action, obs, r, done)
-            agent.remember(state, log_action, r, obs, done)
+            sars = (state, action, obs, r, done)
+            agent.remember(state, action, r, obs, done)
             sarslist.append(sars)
             state = obs
             steps += 1
