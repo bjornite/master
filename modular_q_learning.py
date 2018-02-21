@@ -1,6 +1,7 @@
 from Agent import Agent
 from tf_neural_net import CBTfTwoLayerNet, ModularNet
 from tf_utils import LinearSchedule
+from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 import numpy as np
 import random
 import copy
@@ -11,6 +12,7 @@ class Module():
     def __init__(self, n_actions, args):
         self.net, self.predict, self.train_network, self.get_prediction_error, self.get_meta_prediction_error, self.get_weights, self.assign_weights = args
         self.sliding_target_updates = False
+        self.prioritized_replay = True
         self.training_steps = 0
         self.global_steps = 0
         self.gamma = 1.0
@@ -22,8 +24,14 @@ class Module():
         self.v = 0
         self.observations = []
         self.actions = []
-        self.replay_memory = []
-        self.replay_memory_size = 50000
+        self.replay_memory_size = 1000000
+        self.prioritized_replay_alpha = 0.6
+        self.prioritized_replay_eps = 1e-6
+        if self.prioritized_replay:
+            self.replay_memory = PrioritizedReplayBuffer(self.replay_memory_size,
+                                                         self.prioritized_replay_alpha)
+        else:
+            self.replay_memory = ReplayBuffer(self.replay_memory_size)
         self.minibatch_size = 32
         self.old_weights = []
         self.target_update_freq = 500
@@ -42,11 +50,16 @@ class Module():
                 targets[i] += self.gamma*max_q_values[i]
         return targets
 
+    def make_priorities(self, td_errors, kb_rew, cb_rew):
+        return np.abs(td_errors) + self.prioritized_replay_eps
+    
     def train(self, no_tf_log):
-        if len(self.replay_memory) < self.minibatch_size:
+        if self.replay_memory.length() < self.minibatch_size:
             return
-        data = random.sample(self.replay_memory, self.minibatch_size)
-        states, a, obs, r, done = zip(*data)
+        if self.prioritized_replay:
+            states, a, obs, r, done, weights, batch_idxes = self.replay_memory.sample(self.minibatch_size, 0.5)
+        else:
+            states, a, obs, r, done = self.replay_memory.sample(self.minibatch_size)
         targetActionMask = np.zeros((self.minibatch_size, self.n_actions), dtype=int)
         for i in range(self.minibatch_size):
             targetActionMask[i][a[i]] = 1
@@ -79,14 +92,17 @@ class Module():
         normalization_factor = 1/(self.target_sigma*self.target_sigma)
         self.training_steps += 1
         self.global_steps += 1
-        self.train_network(self.net,
-                           states,
-                           knowledge_rewards,
-                           obs,
-                           targets,
-                           targetActionMask,
-                           normalization_factor,
-                           no_tf_log)
+        td_errors = self.train_network(self.net,
+                                       states,
+                                       knowledge_rewards,
+                                       obs,
+                                       targets,
+                                       targetActionMask,
+                                       normalization_factor,
+                                       no_tf_log)
+        if self.prioritized_replay:
+            new_priorities = self.make_priorities(td_errors, knowledge_rewards, competence_rewards)
+            self.replay_memory.update_priorities(batch_idxes, new_priorities)
         #Update target network parameters
         count = 0
         if self.sliding_target_updates:
@@ -109,10 +125,8 @@ class Module():
         values = self.predict(self.net, [observation])
         return np.argmax(values[0])
 
-    def remember(self, sars):
-        self.replay_memory.append(sars)
-        if len(self.replay_memory) > self.replay_memory_size:
-            self.replay_memory.pop(0)
+    def remember(self, s, a, r, stp1, d):
+        self.replay_memory.add(s, a, r, stp1, d)
 
     def weights(self):
         return self.get_weights(self.net)
@@ -167,15 +181,14 @@ class ModularDQN(Agent):
         self.active_module_counter[self.active_module] += 1
         return self.modules[self.active_module].get_action(observation, is_test)
 
-    def remember(self, sars):
-        done = sars[4]
-        if done:
+    def remember(self, s, a, r, stp1, d):
+        if d:
             self.active_module = random.randint(0, self.activated_modules-1)
         for m in self.modules:
             if random.random() < 0.05:
                 continue
             else:
-                m.remember(sars)
+                m.remember(s, a, r, stp1, d)
 
     def train(self, no_tf_log):
         self.training_steps += 1
@@ -216,4 +229,11 @@ class CBModularDQN(ModularDQN):
         self.modules.append(new_module)
 
 class ThompsonMDQN(ModularDQN):
-    pass
+
+    def remember(self, s, a, r, stp1, d):
+        self.active_module = random.randint(0, self.activated_modules-1)
+        for m in self.modules:
+            if random.random() < 0.05:
+                continue
+            else:
+                m.remember(s, a, r, stp1, d)

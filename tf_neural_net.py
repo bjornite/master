@@ -188,7 +188,7 @@ class CBTfTwoLayerNet(object):
                                                               self.merged,
                                                               self.global_step,
                                                               self.td_errors],
-                                                  feed_dict=feed_dict)
+                                                             feed_dict=feed_dict)
         if global_step % 100 == 0 and not no_tf_log:
             self.train_writer.add_summary(summary, global_step)
         return td_errors
@@ -354,7 +354,7 @@ class ModularNet(object):
             #print(new_vars)
             #self.sess.run(tf.variables_initializer(new_vars))
             # Return functions for the necessary operations
-            return Q, train_op, merged, local_step, pred_error, error_prediction_error, weights, self.train_writer
+            return Q, train_op, merged, local_step, td_errors, pred_error, error_prediction_error, weights, self.train_writer
 
     def init(self):
         init = tf.variables_initializer(tf.global_variables())
@@ -363,7 +363,7 @@ class ModularNet(object):
                                                   self.sess.graph)
 
     def make_module(self, number):
-        Q, train_op, merged, local_step, pred_error, error_prediction_error, weights, train_writer = self.make_graph_module(number)
+        Q, train_op, merged, local_step, td_errors, pred_error, error_prediction_error, weights, train_writer = self.make_graph_module(number)
 
         def predict(self, x, input_weights=None):
             # Calculate prediction and ecoding
@@ -385,14 +385,14 @@ class ModularNet(object):
                          self.targetQ: targetQ,
                          self.targetActionMask: targetActionMask,
                          self.norm_factor: normalization_factor}
-            opt, summary, step, td_errors = self.sess.run([train_op,
-                                                           merged,
-                                                           local_step,
-                                                           tf_errors],
-                                                          feed_dict=feed_dict)
+            opt, summary, step, td_err = self.sess.run([train_op,
+                                                        merged,
+                                                        local_step,
+                                                        td_errors],
+                                                       feed_dict=feed_dict)
             if step % 100 == 0 and not no_tf_log:
                 train_writer.add_summary(summary, step)
-            return td_errors
+            return td_err
 
         def get_prediction_error(self, x, a, x_next):
             feed_dict = {self.X: x,
