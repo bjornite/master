@@ -87,9 +87,8 @@ class CBTfTwoLayerNet(object):
                 reduction_indices=[1]))
             self.pred_loss_regularized = (self.pred_loss) #TODO: regularization
         with tf.name_scope('error_prediction_loss_{}'.format(number)):
-            self.error_prediction_error = tf.reduce_sum(tf.subtract(self.error_prediction,
-                                                                    self.knowledge_reward),
-                                                        reduction_indices=[1])
+            self.error_prediction_error = tf.subtract(tf.reshape(self.error_prediction, [-1]),
+                                                      tf.reshape(self.knowledge_reward, [-1]))
             self.error_prediction_loss = tf.reduce_mean(tf.square(self.error_prediction_error))
             self.error_prediction_loss_regularized = self.error_prediction_loss#TODO: regularize
         with tf.name_scope('policy_loss_{}'.format(number)):
