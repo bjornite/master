@@ -99,13 +99,13 @@ class Qlearner(Agent):
                                                                   knowledge_rewards,
                                                                   obs)
         c = 0
-        for i in range(len(states)):
-            if np.sum(np.square(np.subtract(states[i], self.proto[:4]))) < 1e-1 and a[i] == self.proto[4]:
-                if len(self.protolog) > 0 and knowledge_rewards[i] > self.protolog[-1]:
-                    self.bad += 1.0
-                self.protolog.append(knowledge_rewards[i])
-                self.crlog.append(competence_rewards[i])
-            c += 1
+        #for i in range(len(states)):
+        #    if np.sum(np.square(np.subtract(states[i], self.proto[:4]))) < 1e-1 and a[i] == self.proto[4]#:
+ #               if len(self.protolog) > 0 and knowledge_rewards[i] > self.protolog[-1]:
+ #                   self.bad += 1.0
+ #               self.protolog.append(knowledge_rewards[i])
+ #               self.crlog.append(competence_rewards[i])
+ #           c += 1
         targets = self.make_reward(r,
                                    done,
                                    max_q_values,
