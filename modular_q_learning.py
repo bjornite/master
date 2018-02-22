@@ -109,7 +109,7 @@ class Module():
             current_weights = self.get_weights(self.net)
             for w in self.old_weights:
                 self.old_weights[count] = np.add(np.multiply(self.old_weights[count], 0.999),
-                                                  np.multiply(current_weights[count], (1-0.999)))
+                                                 np.multiply(current_weights[count], (1-0.999)))
                 if self.old_weights[count].shape[0] == 1:
                     self.old_weights[count] = self.old_weights[count].reshape([-1])
                 count += 1
@@ -196,7 +196,29 @@ class ModularDQN(Agent):
             m.train(no_tf_log)
 
     def debug_string(self):
-        return "Number of modules: {0} Module use: {1}".format(self.activated_modules, str(self.active_module_counter))
+        return "Number of modules: {0} Module use: {1}".format(
+            self.activated_modules, str(self.active_module_counter))
+
+
+class KBModule(Module):
+
+    def make_reward(self,
+                    r,
+                    done,
+                    max_q_values,
+                    knowledge_rewards,
+                    competence_rewards):
+        targets = super(KBModule, self).make_reward(r,
+                                                    done,
+                                                    max_q_values,
+                                                    knowledge_rewards,
+                                                    competence_rewards)
+        max_knowledge_reward = np.max(knowledge_rewards)
+        normalized_knowledge_rewards = [kr/max_knowledge_reward for kr in knowledge_rewards]
+        for i in range(self.minibatch_size):
+            if not done[i]:
+                targets[i] += normalized_knowledge_rewards[i]
+        return targets
 
 
 class CBModule(Module):
@@ -219,6 +241,14 @@ class CBModule(Module):
             if competence_rewards[i] > 0 and not done[i]:
                 targets[i] += normalized_competence_rewards[i]
         return targets
+
+
+class KBModularDQN(ModularDQN):
+
+    def make_new_module(self):
+        new_module = KBModule(self.action_space.n, self.model.make_module(len(self.modules)))
+        self.active_module_counter.append(0)
+        self.modules.append(new_module)
 
 
 class CBModularDQN(ModularDQN):

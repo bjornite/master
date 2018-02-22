@@ -283,24 +283,26 @@ class ModularNet(object):
                                    self.use_dropout,
                                    self.keep_prob)
 
-            weightnames = [x.name for x in
-                           tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                             scope="module_{}".format(number))
-                           if x.name.endswith('weights:0')]
             weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                         scope="module_{}".format(number))
             with tf.variable_scope('prediction_loss_{}'.format(number)):
                 # Prediction loss
-                pred_error = tf.reduce_sum(tf.square(tf.subtract(prediction, self.X_next)),
-                                           reduction_indices=[1])
-                pred_loss = tf.reduce_mean(pred_error)
-                pred_loss_regularized = (pred_loss) #TODO: regularization
+                pred_error = tf.sqrt(
+                    tf.reduce_sum(
+                        tf.square(
+                            tf.subtract(prediction, self.X_next)),
+                        reduction_indices=[1]))
+                pred_loss = tf.reduce_mean(
+                    tf.reduce_sum(
+                        tf.square(
+                            tf.subtract(prediction, self.X_next)),
+                        reduction_indices=[1]))
+                pred_loss_regularized = (pred_loss)  # TODO: regularization
             with tf.name_scope('error_prediction_loss_{}'.format(number)):
-                error_prediction_error = tf.reduce_sum(tf.subtract(error_prediction,
-                                                                   self.knowledge_reward),
-                                                       reduction_indices=[1])
+                error_prediction_error = tf.subtract(tf.reshape(error_prediction, [-1]),
+                                                     tf.reshape(self.knowledge_reward, [-1]))
                 error_prediction_loss = tf.reduce_mean(tf.square(error_prediction_error))
-                error_prediction_loss_regularized = error_prediction_loss#TODO: regularize
+                error_prediction_loss_regularized = error_prediction_loss  # TODO: regularize
 
             with tf.variable_scope('policy_loss_{}'.format(number)):
                 q_values = tf.reduce_sum(tf.multiply(Q, self.targetActionMask),

@@ -9,7 +9,7 @@ import os
 import json
 from shutil import copyfile
 from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, RQlearner
-from modular_q_learning import ModularDQN, CBModularDQN, ThompsonMDQN
+from modular_q_learning import ModularDQN, KBModularDQN, CBModularDQN, ThompsonMDQN
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -44,6 +44,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta):
         return Random_agent(name, env, log_dir)
     elif name == "ModularDQN":
         return ModularDQN(name, env, log_dir, learning_rate, reg_beta)
+    elif name == "KBModularDQN":
+        return KBModularDQN(name, env, log_dir, learning_rate, reg_beta)
     elif name == "CBModularDQN":
         return CBModularDQN(name, env, log_dir, learning_rate, reg_beta)
     elif name == "ThompsonMDQN":
