@@ -20,7 +20,8 @@ class CBTfTwoLayerNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        self.n_hiddens = [8, 8, 8]
+        #self.n_hiddens = [8, 8, 8]  # For classic control
+        self.n_hiddens = [128, 128, 128]  # For Atari-ram
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = True

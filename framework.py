@@ -85,6 +85,9 @@ if __name__ == "__main__":
         f.write(label)
 
     returns = []
+    atari = True
+    if atari:
+        print("System set for Atari-ram")
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
 
@@ -100,6 +103,8 @@ if __name__ == "__main__":
     global_steps = 0
     for i in range(args.num_rollouts):
         state = env.reset()
+        if atari:
+            state = (state/255.0) - 0.5
         done = False
         totalr = 0.
         steps = 0
@@ -107,6 +112,8 @@ if __name__ == "__main__":
         while not done:
             action = agent.get_action(state)
             obs, r, done, _ = env.step(action)
+            if atari:
+                obs = (obs/255.0) - 0.5
             totalr += r
             sars = (state, action, obs, r, done)
             agent.remember(state, action, r, obs, done)
@@ -131,10 +138,10 @@ if __name__ == "__main__":
                 agent.train(args.no_tf_log)
                 global_steps += 1
         returns.append(totalr)
-        if i % (args.num_rollouts / 10) == 0:
+        #if i % (args.num_rollouts / 10) == 0:
             #agent.plot_state_visits()
             #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
+        print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
         test_results.append(None)
     learning_rate = 0
     reg_beta = 0
