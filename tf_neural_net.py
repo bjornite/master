@@ -20,7 +20,7 @@ class CBTfTwoLayerNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        self.n_hiddens = [64]
+        self.n_hiddens = [8, 8, 8]
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = True
@@ -54,14 +54,14 @@ class CBTfTwoLayerNet(object):
                          self.use_dropout,
                          self.keep_prob)
             inputAndAction = tf.concat([self.X, self.targetActionMask], axis=1)
-            self.prediction = mlp([64],
+            self.prediction = mlp(self.n_hiddens,
                                   inputAndAction,
                                   self.n_input,
                                   "prediction_module_{}".format(number),
                                   self.use_batch_norm,
                                   self.use_dropout,
                                   self.keep_prob)
-            self.error_prediction = mlp([64],
+            self.error_prediction = mlp(self.n_hiddens,
                                         inputAndAction,
                                         1,
                                         "error_prediction_module_{}".format(number),
