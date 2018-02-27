@@ -34,9 +34,9 @@ class CBTfTwoLayerNet(object):
         self.sess = sess
         if sess is None:
             config = tf.ConfigProto(
-                device_count={'GPU': 0}
+                device_count={'GPU': 1}
             )
-            #config.gpu_options.per_process_gpu_memory_fraction = 0.4
+            config.gpu_options.per_process_gpu_memory_fraction = 0.4
             self.sess = tf.Session(config=config)
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.norm_factor = tf.placeholder("float", shape=())
@@ -226,7 +226,7 @@ class ModularNet(object):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        self.n_hiddens = [64]
+        self.n_hiddens = [128, 128, 128]
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = True
@@ -238,9 +238,9 @@ class ModularNet(object):
         self.sess = sess
         if sess is None:
             config = tf.ConfigProto(
-                device_count={'GPU': 0}
+                device_count={'GPU': 1}
             )
-            #config.gpu_options.per_process_gpu_memory_fraction = 0.4
+            config.gpu_options.per_process_gpu_memory_fraction = 0.4
             self.sess = tf.Session(config=config)
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.norm_factor = tf.placeholder("float", shape=())
@@ -269,14 +269,14 @@ class ModularNet(object):
                     self.use_dropout,
                     self.keep_prob)
             inputAndAction = tf.concat([self.X, self.targetActionMask], axis=1)
-            prediction = mlp([64],
+            prediction = mlp(self.n_hiddens,
                              inputAndAction,
                              self.n_input,
                              "module_{}_prediction_network".format(number),
                              self.use_batch_norm,
                              self.use_dropout,
                              self.keep_prob)
-            error_prediction = mlp([64],
+            error_prediction = mlp(self.n_hiddens,
                                    inputAndAction,
                                    1,
                                    "module_{}_error_prediction".format(number),
