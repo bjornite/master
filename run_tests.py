@@ -8,8 +8,8 @@ from utilities import get_time_string, get_log_dir, parse_time_string
 RUN_FILE = "framework.py"
 LOG_DIR_ROOT = "experiments"
 
-num_workers = 2
-
+num_workers = 3
+num_runs = 10
 agents = [
     "DDQN",
     "R",
@@ -18,11 +18,8 @@ agents = [
     "Thompson",
     "BootDQN",
     "KBBoot"]
-
 learning_rates = [1e-3, 5e-3]
-
 epsilon = [10000, 1000, 100]
-
 experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
                ("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                ("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
@@ -50,19 +47,20 @@ for i in range(len(experiments)):
     env, rollouts, hiddens, ldir = experiments[i]
     log_dir = LOG_DIR_ROOT + "/" + ldir
     for agent in agents:
-        for lr in learning_rates:
-            for eps in epsilon:
-                commands.append(
-                    "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate {6} --n_hiddens {7} --epsilon {8}".format(
-                        RUN_FILE,
-                        agent,
-                        env,
-                        log_dir,
-                        rollouts,
-                        log_tf,
-                        lr,
-                        " ".join(str(x) for x in hiddens),
-                        eps))
+        for i in range(num_runs):
+            for lr in learning_rates:
+                for eps in epsilon:
+                    commands.append(
+                        "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate {6} --n_hiddens {7} --epsilon {8}".format(
+                            RUN_FILE,
+                            agent,
+                            env,
+                            log_dir,
+                            rollouts,
+                            log_tf,
+                            lr,
+                            " ".join(str(x) for x in hiddens),
+                            eps))
 
 pool = Pool(num_workers)  # two concurrent commands at a time
 for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):
