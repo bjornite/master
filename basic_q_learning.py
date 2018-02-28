@@ -9,9 +9,9 @@ import os
 import tensorflow as tf
 import pickle
 
-class Qlearner(Agent):
-    def __init__(self, name, env, log_dir, learning_rate, reg_beta):
-        super(Qlearner, self).__init__(name, env, log_dir)
+class DDQN(Agent):
+    def __init__(self, name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon):
+        super(DDQN, self).__init__(name, env, log_dir)
 
         inputsize = 0
         try:
@@ -20,10 +20,11 @@ class Qlearner(Agent):
             inputsize = self.observation_space.n
         self.model = CBTfTwoLayerNet(inputsize,
                                      self.action_space.n,
+                                     n_hiddens,
                                      learning_rate,
                                      reg_beta,
                                      self.log_dir)
-        self.epsilon_schedule = LinearSchedule(1.0, 1000, 0.02)
+        self.epsilon_schedule = LinearSchedule(1.0, epsilon, 0.02)
         self.sliding_target_updates = False
         self.prioritized_replay = False
         self.training_steps = 0
@@ -225,7 +226,7 @@ class Qlearner(Agent):
         return ""
 
 
-class KBQlearner(Qlearner):
+class KB(DDQN):
 
     def make_reward(self,
                     r,
@@ -233,7 +234,7 @@ class KBQlearner(Qlearner):
                     max_q_values,
                     knowledge_rewards,
                     competence_rewards):
-        targets = super(KBQlearner, self).make_reward(r,
+        targets = super(KB, self).make_reward(r,
                                                       done,
                                                       max_q_values,
                                                       knowledge_rewards,
@@ -246,7 +247,7 @@ class KBQlearner(Qlearner):
         return targets
 
 
-class IKBQlearner(Qlearner):
+class IKBQlearner(DDQN):
 
     def make_reward(self,
                     r,
@@ -266,7 +267,7 @@ class IKBQlearner(Qlearner):
         return targets
 
 
-class CBQlearner(Qlearner):
+class CB(DDQN):
 
     def make_reward(self,
                     r,
@@ -274,7 +275,7 @@ class CBQlearner(Qlearner):
                     max_q_values,
                     knowledge_rewards,
                     competence_rewards):
-        targets = super(CBQlearner, self).make_reward(r,
+        targets = super(CB, self).make_reward(r,
                                                       done,
                                                       max_q_values,
                                                       knowledge_rewards,
@@ -288,7 +289,7 @@ class CBQlearner(Qlearner):
         return targets
 
 
-class RQlearner(Qlearner):
+class R(DDQN):
 
     def make_reward(self,
                     r,
@@ -297,7 +298,7 @@ class RQlearner(Qlearner):
                     #base_q_values,
                     knowledge_rewards,
                     competence_rewards):
-        targets = super(RQlearner, self).make_reward(r,
+        targets = super(R, self).make_reward(r,
                                                       done,
                                                       max_q_values,
                                                       knowledge_rewards,
@@ -308,7 +309,7 @@ class RQlearner(Qlearner):
         return targets
 
 
-class SAQlearner(Qlearner):
+class SAQlearner(DDQN):
 
     def get_action(self, observation, is_test=False):
         if random.random() < self.random_action_prob and not is_test:
@@ -322,7 +323,7 @@ class SAQlearner(Qlearner):
             return np.argmax(values[0])
 
 
-class ISAQlearner(Qlearner):
+class ISAQlearner(DDQN):
 
     def get_action(self, observation, is_test=False):
         if random.random() < self.random_action_prob and not is_test:
@@ -336,7 +337,7 @@ class ISAQlearner(Qlearner):
             return np.argmax(values[0])
 
 
-class MSAQlearner(Qlearner):
+class MSAQlearner(DDQN):
 
     def get_action(self, observation, is_test=False):
         if random.random() < self.random_action_prob and not is_test:
@@ -353,7 +354,7 @@ class MSAQlearner(Qlearner):
             return np.argmax(values[0])
 
 
-class IMSAQlearner(Qlearner):
+class IMSAQlearner(DDQN):
 
     def get_action(self, observation, is_test=False):
         if random.random() < self.random_action_prob and not is_test:
@@ -370,7 +371,7 @@ class IMSAQlearner(Qlearner):
             return np.argmax(values[0])
 
 
-class TESTQlearner(Qlearner):
+class TESTQlearner(DDQN):
 
     def make_reward(self,
                     r,

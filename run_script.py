@@ -23,6 +23,7 @@ parser.add_argument('--render', action='store_true')
 parser.add_argument("--max_timesteps", type=int)
 parser.add_argument('--num_rollouts', type=int, default=DEFAULT_NUM_ROLLOUTS)
 parser.add_argument('--learning_rate', type=float, default=DEFAULT_LEARNING_RATE)
+parser.add_argument('--n_hiddens', nargs="+", type=int, default=[8])
 parser.add_argument('--log_dir', type=str, default=LOG_DIR_ROOT)
 parser.add_argument('--log_tf', action='store_true')
 parser.add_argument('--num_workers', type=int, default=DEFAULT_NUM_WORKERS)
@@ -44,14 +45,15 @@ for env in args.envname:
     for agent in args.agentname:
         for i in range(args.num_runs):
             commands.append(
-                "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6}".format(
+                "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate={6} --n_hiddens {7}".format(
                     RUN_FILE,
                     agent,
                     env,
                     args.log_dir,
                     args.num_rollouts,
                     log_tf,
-                    args.learning_rate))
+                    args.learning_rate,
+                    " ".join(str(x) for x in args.n_hiddens)))
 
 pool = Pool(args.num_workers)  # two concurrent commands at a time
 for i, returncode in enumerate(pool.imap(partial(call, shell=True), commands)):

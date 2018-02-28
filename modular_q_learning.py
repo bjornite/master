@@ -135,9 +135,9 @@ class Module():
         self.assign_weights(self.net, weights)
 
 
-class ModularDQN(Agent):
-    def __init__(self, name, env, log_dir, learning_rate, reg_beta):
-        super(ModularDQN, self).__init__(name, env, log_dir)
+class BootDQN(Agent):
+    def __init__(self, name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon):
+        super(BootDQN, self).__init__(name, env, log_dir)
         inputsize = 0
         try:
             inputsize = self.observation_space.shape[0]
@@ -145,12 +145,13 @@ class ModularDQN(Agent):
             inputsize = self.observation_space.n
         self.modules = []
         config = tf.ConfigProto(
-            device_count={'GPU': 0}
+            device_count={'GPU': 1}
             )
-        #config.gpu_options.per_process_gpu_memory_fraction = 0.4
+        config.gpu_options.per_process_gpu_memory_fraction = 0.3
         self.sess = tf.Session(config=config)
         self.model = ModularNet(inputsize,
                                 self.action_space.n,
+                                n_hiddens,
                                 learning_rate,
                                 reg_beta,
                                 self.log_dir,
@@ -243,7 +244,7 @@ class CBModule(Module):
         return targets
 
 
-class KBModularDQN(ModularDQN):
+class KBBoot(BootDQN):
 
     def make_new_module(self):
         new_module = KBModule(self.action_space.n, self.model.make_module(len(self.modules)))
@@ -251,7 +252,7 @@ class KBModularDQN(ModularDQN):
         self.modules.append(new_module)
 
 
-class CBModularDQN(ModularDQN):
+class CBBoot(BootDQN):
 
     def make_new_module(self):
         new_module = CBModule(self.action_space.n, self.model.make_module(len(self.modules)))
@@ -259,7 +260,7 @@ class CBModularDQN(ModularDQN):
         self.modules.append(new_module)
 
 
-class ThompsonMDQN(ModularDQN):
+class Thompson(BootDQN):
 
     def remember(self, s, a, r, stp1, d):
         self.active_module = random.randint(0, self.activated_modules-1)

@@ -8,8 +8,8 @@ import time
 import os
 import json
 from shutil import copyfile
-from basic_q_learning import Qlearner,  Random_agent, KBQlearner, IKBQlearner, CBQlearner, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, RQlearner
-from modular_q_learning import ModularDQN, KBModularDQN, CBModularDQN, ThompsonMDQN
+from basic_q_learning import DDQN,  Random_agent, KB, IKBQlearner, CB, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, R
+from modular_q_learning import BootDQN, KBBoot, CBBoot, Thompson
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -19,37 +19,37 @@ import deepexplorebenchmark
 #import universe
 import git
 
-def get_agent(name, env, log_dir, learning_rate, reg_beta):
-    if name == "Qlearner":
-        return Qlearner(name, env, log_dir, learning_rate, reg_beta)
-    elif name == "KBQlearner":
-        return KBQlearner(name, env, log_dir, learning_rate, reg_beta)
+def get_agent(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon):
+    if name == "DDQN":
+        return DDQN(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "KB":
+        return KB(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "IKBQlearner":
-        return IKBQlearner(name, env, log_dir, learning_rate, reg_beta)
-    elif name == "CBQlearner":
-        return CBQlearner(name, env, log_dir, learning_rate, reg_beta)
-    elif name == "RQlearner":
-        return RQlearner(name, env, log_dir, learning_rate, reg_beta)
+        return IKBQlearner(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "CB":
+        return CB(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "R":
+        return R(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "SAQlearner":
-        return SAQlearner(name, env, log_dir, learning_rate, reg_beta)
+        return SAQlearner(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "ISAQlearner":
-        return ISAQlearner(name, env, log_dir, learning_rate, reg_beta)
+        return ISAQlearner(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "MSAQlearner":
-        return MSAQlearner(name, env, log_dir, learning_rate, reg_beta)
+        return MSAQlearner(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "IMSAQlearner":
-        return IMSAQlearner(name, env, log_dir, learning_rate, reg_beta)
+        return IMSAQlearner(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "TESTQlearner":
-        return TESTQlearner(name, env, log_dir, learning_rate, reg_beta)
+        return TESTQlearner(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "Random_agent":
-        return Random_agent(name, env, log_dir)
-    elif name == "ModularDQN":
-        return ModularDQN(name, env, log_dir, learning_rate, reg_beta)
-    elif name == "KBModularDQN":
-        return KBModularDQN(name, env, log_dir, learning_rate, reg_beta)
-    elif name == "CBModularDQN":
-        return CBModularDQN(name, env, log_dir, learning_rate, reg_beta)
-    elif name == "ThompsonMDQN":
-        return ThompsonMDQN(name, env, log_dir, learning_rate, reg_beta)
+        return Random_agent(name, env, log_dir, n_hiddens, epsilon)
+    elif name == "BootDQN":
+        return BootDQN(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "KBBoot":
+        return KBBoot(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "CBBoot":
+        return CBBoot(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "Thompson":
+        return Thompson(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     else:
         print("No agent type named {0}".format(name))
 
@@ -73,8 +73,11 @@ if __name__ == "__main__":
     parser.add_argument('--num_runs', type=int, default=1)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--regularization_beta', type=float, default=0.)
+    parser.add_argument('--n_hiddens', nargs="+", type=int, default=[8])
+    parser.add_argument('--epsilon', type=int, default=1000)
     parser.add_argument('--no_tf_log', action='store_true', default=False)
     parser.add_argument('--model', type=str, default="")
+    parser.add_argument('--atari', action='store_true', default=False)
     args = parser.parse_args()
     log_dir = get_log_dir(args.agentname, args.envname, args.log_dir_root)
     try:
@@ -85,14 +88,13 @@ if __name__ == "__main__":
         f.write(label)
 
     returns = []
-    atari = True
-    if atari:
+    if args.atari:
         print("System set for Atari-ram")
     env = gym.make(args.envname)
     max_steps = args.max_timesteps or env.spec.timestep_limit
 
     print('Initializing agent')
-    agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta)
+    agent = get_agent(args.agentname, env, log_dir, args.learning_rate, args.regularization_beta, args.n_hiddens, epsilon=args.epsilon)
     stop_training = False
     if args.model is not "":
         agent.load_model(args.model)
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     global_steps = 0
     for i in range(args.num_rollouts):
         state = env.reset()
-        if atari:
+        if args.atari:
             state = (state/255.0) - 0.5
         done = False
         totalr = 0.
@@ -112,7 +114,7 @@ if __name__ == "__main__":
         while not done:
             action = agent.get_action(state)
             obs, r, done, _ = env.step(action)
-            if atari:
+            if args.atari:
                 obs = (obs/255.0) - 0.5
             totalr += r
             sars = (state, action, obs, r, done)
@@ -138,10 +140,10 @@ if __name__ == "__main__":
                 agent.train(args.no_tf_log)
                 global_steps += 1
         returns.append(totalr)
-        #if i % (args.num_rollouts / 10) == 0:
+        if i % (args.num_rollouts / 10) == 0:
             #agent.plot_state_visits()
             #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-        print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
+            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
         test_results.append(None)
     learning_rate = 0
     reg_beta = 0
@@ -149,9 +151,10 @@ if __name__ == "__main__":
     log_data["return"] = returns
     log_data["agent"] = [args.agentname]*len(log_data)
     log_data["env"] = [args.envname]*len(log_data)
-    log_data["learning_rate"] = [learning_rate]*len(log_data)
+    log_data["learning_rate"] = [args.learning_rate]*len(log_data)
     log_data["regularization_beta"] = [reg_beta]*len(log_data)
-    log_data["test_results"] = test_results
+    log_data["epsilon"] = [args.epsilon]*len(log_data)
+
     log_data.to_csv("{0}/returns.csv".format(log_dir))
     with open("{0}/trajectories.pkl".format(log_dir), 'wb+') as f:
         pickle.dump(sarslist, f)

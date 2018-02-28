@@ -16,12 +16,12 @@ def mlp(n_hiddens, inpt, n_output, scope, use_batch_norm=False, use_dropout=Fals
         return q
 
 class CBTfTwoLayerNet(object):
-    def __init__(self, input_size, output_size, learning_rate=1e-4, reg_beta=1e-6, log_dir="test_logs", number = None, sess = None):
+    def __init__(self, input_size, output_size, n_hiddens, learning_rate=1e-4, reg_beta=1e-6, log_dir="test_logs", number = None, sess = None):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        #self.n_hiddens = [8, 8, 8]  # For classic control
-        self.n_hiddens = [128, 128, 128]  # For Atari-ram
+        self.n_hiddens = n_hiddens  # For classic control
+        #self.n_hiddens = [128, 128, 128]  # For Atari-ram
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = True
@@ -34,9 +34,9 @@ class CBTfTwoLayerNet(object):
         self.sess = sess
         if sess is None:
             config = tf.ConfigProto(
-                device_count={'GPU': 1}
+                device_count={'GPU': 0}
             )
-            config.gpu_options.per_process_gpu_memory_fraction = 0.4
+            #config.gpu_options.per_process_gpu_memory_fraction = 0.4
             self.sess = tf.Session(config=config)
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.norm_factor = tf.placeholder("float", shape=())
@@ -222,11 +222,12 @@ class CBTfTwoLayerNet(object):
 
 class ModularNet(object):
 
-    def __init__(self, input_size, output_size, learning_rate=1e-4, reg_beta=1e-6, log_dir="test_logs", sess = None):
+    def __init__(self, input_size, output_size, n_hiddens, learning_rate=1e-4, reg_beta=1e-6, log_dir="test_logs", sess = None):
         # Hyperparameters
         self.learning_rate = learning_rate
         self.beta = reg_beta
-        self.n_hiddens = [128, 128, 128]
+        self.n_hiddens = n_hiddens
+        #self.n_hiddens = [128, 128, 128]
         self.use_batch_norm = False
         self.use_dropout = False
         self.clip_gradients = True
@@ -240,7 +241,7 @@ class ModularNet(object):
             config = tf.ConfigProto(
                 device_count={'GPU': 1}
             )
-            config.gpu_options.per_process_gpu_memory_fraction = 0.4
+            config.gpu_options.per_process_gpu_memory_fraction = 0.3
             self.sess = tf.Session(config=config)
         self.keep_prob = tf.placeholder_with_default(0.8, shape=())
         self.norm_factor = tf.placeholder("float", shape=())
