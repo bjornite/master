@@ -36,35 +36,33 @@ experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
                #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")
 ]
 
-log_dir = LOG_DIR_ROOT
-series_dict = {}
-counter = 0
-for subdir, dirs, files in os.walk(log_dir):
-    for dir in sorted(dirs):
-        log_dir2 = os.path.join(log_dir, dir)
-        for subdir2, dirs2, files2 in os.walk(log_dir2):
-            for dir2 in sorted(dirs2):
-                log_dir3 = os.path.join(log_dir2, dir2)
-                for subdir3, dirs3, files3 in os.walk(log_dir3):
-                    for file in sorted(files3):
-                        if file == "returns.csv":
-                            s = pd.read_csv(os.path.join(log_dir2, dir2, file),
-                                            header=None,
-                                            names=["iteration",
-                                                   "return",
-                                                   "agent",
-                                                   "env",
-                                                   "learning_rate",
-                                                   "regularization_beta",
-                                                   "epsilon"],
-                                            skiprows=1)
-                            s["run"] = [counter] * len(s)
-                            series_dict[counter] = s
-                            counter += 1
-
 for i in range(len(experiments)):
+    counter = 0
+    series_dict = {}
     env, rollouts, hiddens, ldir = experiments[i]
-    print(env)
+    log_dir = LOG_DIR_ROOT + "/" + ldir
+    for subdir, dirs, files in os.walk(log_dir):
+        for dir in sorted(dirs):
+            if dir.split("_")[1] != env:
+                continue
+            log_dir2 = os.path.join(log_dir, dir)
+            for subdir2, dirs2, files2 in os.walk(log_dir2):
+                for file in sorted(files2):
+                    if file == "returns.csv":
+                        s = pd.return ead_csv(os.path.join(log_dir2, dir2, file),
+                                              header=None,
+                                              names=["iteration",
+                                                     "return",
+                                                     "agent",
+                                                     "env",
+                                                     "learning_rate",
+                                                     "regularization_beta",
+                                                     "epsilon"],
+                                              skiprows=1)
+                        s["run"] = [counter] * len(s)
+                        series_dict[counter] = s
+                        counter += 1
+    print(env + ":")
     for lr in learning_rates:
         print("\tlr={}:".format(lr))
         for eps in epsilon:
