@@ -145,9 +145,9 @@ class BootDQN(Agent):
             inputsize = self.observation_space.n
         self.modules = []
         config = tf.ConfigProto(
-            device_count={'GPU': 1}
+            device_count={'GPU': 0}
             )
-        config.gpu_options.per_process_gpu_memory_fraction = 0.3
+        config.gpu_options.per_process_gpu_memory_fraction = 0.2
         self.sess = tf.Session(config=config)
         self.model = ModularNet(inputsize,
                                 self.action_space.n,
