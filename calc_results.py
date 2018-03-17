@@ -90,12 +90,13 @@ for i in range(len(experiments)):
                     sys.exit(0)
                 res[env][str(hiddens)][lr][eps][agent]['returns'] = []
                 res[env][str(hiddens)][lr][eps][agent]['highscores'] = []
-                for run in set(s['run']):
+                for run in set(df['run']):
+                    df_run = df.loc[df['run'] == run]
                     # Calculate sum of returns
-                    returns = df.loc[df['iteration'] <= cutoff]['return'].sum()
+                    returns = df_run.loc[df_run['iteration'] <= cutoff]['return'].sum()
                     # Calculate average of 90th percentile episodes
-                    highscores = df.loc[df['return'] >= df['return'].quantile(.90)]['return'].mean()
-                    maxscore = df['return'].max()
+                    highscores = df_run.loc[df_run['return'] >= df_run['return'].quantile(.90)]['return'].mean()
+                    maxscore = df_run['return'].max()
                     res[env][str(hiddens)][lr][eps][agent]['returns'].append(returns)
                     res[env][str(hiddens)][lr][eps][agent]['highscores'].append(highscores)
                     #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
@@ -110,8 +111,8 @@ for env, data in res.items():
                 high = np.average(data4["DDQN"]["highscores"])
                 #maxs = data4["DDQN"]["maxscore"]
                 for agent, data5 in data4.items():
-                    data5["returns"] = np.average(data5["returns"]) / ret
-                    data5["highscores"] = np.average(data5["highscores"]) / high
+                    data5["returns"] = np.average(data5["returns"]) / abs(ret)
+                    data5["highscores"] = np.average(data5["highscores"]) / abs(high)
                     #data5["maxscore"] /= maxs
 
 # Write results to file:
