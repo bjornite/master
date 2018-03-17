@@ -269,3 +269,20 @@ class Thompson(BootDQN):
                 continue
             else:
                 m.remember(s, a, r, stp1, d)
+
+
+class AllCombined(BootDQN):
+
+    def make_new_module(self):
+        new_module = KBModule(self.action_space.n, self.model.make_module(len(self.modules)))
+        self.active_module_counter.append(0)
+        self.modules.append(new_module)
+
+    def get_action(self, observation, is_test=False):
+        self.action_steps += 1.0
+        if random.random() < 0.05:
+            random_module = random.randint(0,self.activated_modules-1)
+            return self.modules[random_module].get_action(observation, is_test)
+        else:
+            self.active_module_counter[self.active_module] += 1
+            return self.modules[self.active_module].get_action(observation, is_test)

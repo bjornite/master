@@ -9,7 +9,7 @@ import os
 import json
 from shutil import copyfile
 from basic_q_learning import DDQN,  Random_agent, KB, IKBQlearner, CB, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, R
-from modular_q_learning import BootDQN, KBBoot, CBBoot, Thompson
+from modular_q_learning import BootDQN, KBBoot, CBBoot, Thompson, AllCombined
 from utilities import get_time_string, get_log_dir, parse_time_string
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -50,6 +50,8 @@ def get_agent(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon):
         return CBBoot(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     elif name == "Thompson":
         return Thompson(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
+    elif name == "AllCombined":
+        return AllCombined(name, env, log_dir, learning_rate, reg_beta, n_hiddens, epsilon)
     else:
         print("No agent type named {0}".format(name))
 
@@ -126,14 +128,14 @@ if __name__ == "__main__":
                 img = env.render(mode="rgb_array")
                 if i == 3:
                     import scipy
-                    scipy.misc.imsave('cartpole.png', img)
+                    scipy.misc.imsave('mountaincar.png', img)
                     #img[:, 325, :] = 0
-                    for i in range(len(img[:, 0, 0])):
-                        for j in range(len(img[0, :, 0])):
-                            for k in range(len(img[0, 0, :])):
-                                if j > 425 and img[i, j, k] == 255:
-                                    img[i, j, k] = 200
-                    scipy.misc.imsave('cartpolealtered.png', img)
+                    #for i in range(len(img[:, 0, 0])):
+                    #    for j in range(len(img[0, :, 0])):
+                    #        for k in range(len(img[0, 0, :])):
+                    #            if j > 425 and img[i, j, k] == 255:
+                    #                img[i, j, k] = 200
+                    #scipy.misc.imsave('cartpolealtered.png', img)
             if steps >= max_steps:
                 break
             if not stop_training:
