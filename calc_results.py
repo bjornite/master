@@ -69,13 +69,43 @@ for i in range(len(experiments)):
     for lr in learning_rates:
         #print("\tlr={}:".format(lr))
         res[env][str(hiddens)][lr] = {}
-        for eps in epsilon:
-            res[env][str(hiddens)][lr][eps] = {}
-            #print("\t\teps={}:".format(eps))
-            for agent in agents:
-                res[env][str(hiddens)][lr][eps][agent] = {}
+        #print("\t\teps={}:".format(eps))
+        for agent in agents:
+            res[env][str(hiddens)][lr][agent] = {}
+            if agent in ["DDQN", "R", "KB", "CB"]:
+                for eps in epsilon:
+                    res[env][str(hiddens)][lr][agent][eps] = {}
+                    df = pd.concat(series_dict, ignore_index=True)
+                    df = df.loc[df['epsilon'] == eps]
+                    df = df.loc[df['learning_rate'] == lr]
+                    df = df.loc[df['agent'] == agent]
+                    #print(agent)
+                    #df.plot()
+                    #df = df.loc[df['iteration'] <= 600]
+                    if env == "CartPole-v0":
+                        cutoff = 300
+                    elif env == "MountainCar-v0":
+                        cutoff = 1500
+                    else:
+                        print("Must add cutoff value for this environment: {}".format(env))
+                        sys.exit(0)
+                    res[env][str(hiddens)][lr][agent][eps]['returns'] = []
+                    res[env][str(hiddens)][lr][agent][eps]['highscores'] = []
+                    for run in set(df['run']):
+                        df_run = df.loc[df['run'] == run]
+                        # Calculate sum of returns
+                        returns = df_run.loc[df_run['iteration'] <= cutoff]['return'].sum()
+                        # Calculate average of 90th percentile episodes
+                        highscores = df_run.loc[df_run['return'] >= df_run['return'].quantile(.90)]['return'].mean()
+                        maxscore = df_run['return'].max()
+                        res[env][str(hiddens)][lr][agent][eps]['returns'].append(returns)
+                        res[env][str(hiddens)][lr][agent][eps]['highscores'].append(highscores)
+                        #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
+                        #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
+            else:
+                eps = "N/A"
+                res[env][str(hiddens)][lr][agent][eps] = {}
                 df = pd.concat(series_dict, ignore_index=True)
-                df = df.loc[df['epsilon'] == eps]
                 df = df.loc[df['learning_rate'] == lr]
                 df = df.loc[df['agent'] == agent]
                 #print(agent)
@@ -88,8 +118,8 @@ for i in range(len(experiments)):
                 else:
                     print("Must add cutoff value for this environment: {}".format(env))
                     sys.exit(0)
-                res[env][str(hiddens)][lr][eps][agent]['returns'] = []
-                res[env][str(hiddens)][lr][eps][agent]['highscores'] = []
+                res[env][str(hiddens)][lr][agent][eps]['returns'] = []
+                res[env][str(hiddens)][lr][agent][eps]['highscores'] = []
                 for run in set(df['run']):
                     df_run = df.loc[df['run'] == run]
                     # Calculate sum of returns
@@ -97,30 +127,34 @@ for i in range(len(experiments)):
                     # Calculate average of 90th percentile episodes
                     highscores = df_run.loc[df_run['return'] >= df_run['return'].quantile(.90)]['return'].mean()
                     maxscore = df_run['return'].max()
-                    res[env][str(hiddens)][lr][eps][agent]['returns'].append(returns)
-                    res[env][str(hiddens)][lr][eps][agent]['highscores'].append(highscores)
+                    res[env][str(hiddens)][lr][agent][eps]['returns'].append(returns)
+                    res[env][str(hiddens)][lr][agent][eps]['highscores'].append(highscores)
                     #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
                     #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
-
 # Normalize scores relative to DDQN for each parameter setting
 for env, data in res.items():
     for arch, data2 in data.items():
         for lr, data3 in data2.items():
-            for eps, data4 in data3.items():
-                ret = np.average(data4["DDQN"]["returns"])
-                high = np.average(data4["DDQN"]["highscores"])
+            best_ret = float('-inf')
+            best_high = float('-inf')
+            for eps, data_ddqn in data3["DDQN"].items():
+                ret = np.average(data3["DDQN"][eps]["returns"])
+                if ret > best_ret: best_ret = ret
+                high = np.average(data3["DDQN"][eps]["highscores"])
+                if high > best_high: best_high = high
+            for agent, data4 in data3.items():
+                for eps, data5 in data4.items():
                 #maxs = data4["DDQN"]["maxscore"]
-                for agent, data5 in data4.items():
-                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["returns"]) / abs(ret),
-                                                          np.std(data5["returns"]) / abs(ret))
-                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["highscores"]) / abs(high),
-                                                          np.std(data5["highscores"]) / abs(high))
+                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["returns"]) / abs(best_ret),
+                                                          np.std(data5["returns"]) / abs(best_ret))
+                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["highscores"]) / abs(best_high),
+                                                          np.std(data5["highscores"]) / abs(best_high))
                     #data5["maxscore"] /= maxs
 
 # Write results to file:
-reform = {(env, arch, lr, eps, agent): data5 for env, data in res.items() for arch, data2 in data.items() for lr, data3 in data2.items() for eps, data4 in data3.items() for agent, data5 in data4.items()}
+reform = {(env, arch, lr, agent, eps): data5 for env, data in res.items() for arch, data2 in data.items() for lr, data3 in data2.items() for agent, data4 in data3.items() for eps, data5 in data4.items()}
 df = pd.DataFrame.from_dict(reform, orient="index")
-mi = pd.MultiIndex.from_tuples(df.index, names=["env", "layers", "lr", "$\\epsilon$-schedule", "agent"])
+mi = pd.MultiIndex.from_tuples(df.index, names=["env", "layers", "lr", "agent", "epsilon-schedule"])
 df.index = mi
 def formater(x):
     return "{0:.2f}".format(x)
