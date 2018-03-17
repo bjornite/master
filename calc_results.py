@@ -41,7 +41,7 @@ for i in range(len(experiments)):
     counter = 0
     series_dict = {}
     env, rollouts, hiddens, ldir = experiments[i]
-    res[env] = {}
+    res[env] = res.get(env, {})
     res[env][str(hiddens)] = {}
     log_dir = LOG_DIR_ROOT + "/" + ldir
     for subdir, dirs, files in os.walk(log_dir):
