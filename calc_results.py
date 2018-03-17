@@ -111,10 +111,10 @@ for env, data in res.items():
                 high = np.average(data4["DDQN"]["highscores"])
                 #maxs = data4["DDQN"]["maxscore"]
                 for agent, data5 in data4.items():
-                    data5["ret_std"] = np.std(data5["returns"]) / abs(ret)
-                    data5["hs_std"] = np.std(data5["highscores"]) / abs(high)
-                    data5["returns"] = np.average(data5["returns"]) / abs(ret)
-                    data5["highscores"] = np.average(data5["highscores"]) / abs(high)
+                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["returns"]) / abs(ret),
+                                                          np.std(data5["returns"]) / abs(ret))
+                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["highscores"]) / abs(high),
+                                                          np.std(data5["highscores"]) / abs(high))
                     #data5["maxscore"] /= maxs
 
 # Write results to file:
