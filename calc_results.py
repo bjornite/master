@@ -133,15 +133,17 @@ for i in range(len(experiments)):
                     #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
 # Normalize scores relative to DDQN for each parameter setting
 for env, data in res.items():
+    best_ret = float('-inf')
+    best_high = float('-inf')
     for arch, data2 in data.items():
         for lr, data3 in data2.items():
-            best_ret = float('-inf')
-            best_high = float('-inf')
             for eps, data_ddqn in data3["DDQN"].items():
                 ret = np.nanmean(data3["DDQN"][eps]["returns"])
                 if ret > best_ret: best_ret = ret
                 high = np.nanmean(data3["DDQN"][eps]["highscores"])
                 if high > best_high: best_high = high
+    for arch, data2 in data.items():
+        for lr, data3 in data2.items():
             for agent, data4 in data3.items():
                 for eps, data5 in data4.items():
                 #maxs = data4["DDQN"]["maxscore"]
