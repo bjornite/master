@@ -138,17 +138,17 @@ for env, data in res.items():
             best_ret = float('-inf')
             best_high = float('-inf')
             for eps, data_ddqn in data3["DDQN"].items():
-                ret = np.average(data3["DDQN"][eps]["returns"])
+                ret = np.nanmean(data3["DDQN"][eps]["returns"])
                 if ret > best_ret: best_ret = ret
-                high = np.average(data3["DDQN"][eps]["highscores"])
+                high = np.nanmean(data3["DDQN"][eps]["highscores"])
                 if high > best_high: best_high = high
             for agent, data4 in data3.items():
                 for eps, data5 in data4.items():
                 #maxs = data4["DDQN"]["maxscore"]
-                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["returns"]) / abs(best_ret),
-                                                          np.std(data5["returns"]) / abs(best_ret))
-                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.average(data5["highscores"]) / abs(best_high),
-                                                          np.std(data5["highscores"]) / abs(best_high))
+                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["returns"]) / abs(best_ret),
+                                                          np.nanstd(data5["returns"]) / abs(best_ret))
+                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["highscores"]) / abs(best_high),
+                                                          np.nanstd(data5["highscores"]) / abs(best_high))
                     #data5["maxscore"] /= maxs
 
 # Write results to file:
