@@ -9,30 +9,30 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-LOG_DIR_ROOT = "experiments"
-#LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
+#LOG_DIR_ROOT = "experiments"
+LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
 agents = ["DDQN",
-          "R",
+          #"R",
           "KB",
-          "CB",
+          #"CB",
           "Thompson",
           "BootDQN",
           "KBBoot"]
 learning_rates = [1e-3, 5e-3]
 epsilon = [10000, 1000]
-experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
+experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
                #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
                #("CartPole-v0", 600, [32], "largeonelayernet"),
                #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
                #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
-               #("MountainCar-v0", 1500, [8], "smallonelayernet"),
-               #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
-               #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
-               #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
-               #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")
+               ("MountainCar-v0", 1500, [8], "smallonelayernet"),
+               ("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
+               ("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               ("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
+               ("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")
 ]
 
 res = {}
@@ -91,6 +91,7 @@ for i in range(len(experiments)):
                         sys.exit(0)
                     res[env][str(hiddens)][lr][agent][eps]['returns'] = []
                     res[env][str(hiddens)][lr][agent][eps]['highscores'] = []
+                    res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'] = []
                     for run in set(df['run']):
                         df_run = df.loc[df['run'] == run]
                         # Calculate sum of returns
@@ -100,6 +101,7 @@ for i in range(len(experiments)):
                         maxscore = df_run['return'].max()
                         res[env][str(hiddens)][lr][agent][eps]['returns'].append(returns)
                         res[env][str(hiddens)][lr][agent][eps]['highscores'].append(highscores)
+                        res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
                         #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
                         #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
             else:
@@ -120,6 +122,7 @@ for i in range(len(experiments)):
                     sys.exit(0)
                 res[env][str(hiddens)][lr][agent][eps]['returns'] = []
                 res[env][str(hiddens)][lr][agent][eps]['highscores'] = []
+                res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'] = []
                 for run in set(df['run']):
                     df_run = df.loc[df['run'] == run]
                     # Calculate sum of returns
@@ -129,6 +132,7 @@ for i in range(len(experiments)):
                     maxscore = df_run['return'].max()
                     res[env][str(hiddens)][lr][agent][eps]['returns'].append(returns)
                     res[env][str(hiddens)][lr][agent][eps]['highscores'].append(highscores)
+                    res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
                     #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
                     #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
 # Normalize scores relative to DDQN for each parameter setting
@@ -152,11 +156,12 @@ for env, data in res.items():
             for agent, data4 in data3.items():
                 for eps, data5 in data4.items():
                 #maxs = data4["DDQN"]["maxscore"]
-                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["returns"]) / abs(best_ret),
-                                                          np.nanstd(data5["returns"]) / abs(best_ret))
-                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["highscores"]) / abs(best_high),
-                                                          np.nanstd(data5["highscores"]) / abs(best_high))
-                    data5["mean_best_streak"] = max(moving_average(data5["returns"], n=100))
+                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["returns"]),# / abs(best_ret),
+                                                          np.nanstd(data5["returns"])) # / abs(best_ret))
+                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["highscores"]), # / abs(best_high),
+                                                          np.nanstd(data5["highscores"])) # / abs(best_high))
+                    data5['mean_best_streak'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["mean_best_streak"]), # / abs(best_high),
+                                                          np.nanstd(data5["mean_best_streak"])) # / abs(best_high))
 
 # Write results to file:
 reform = {(env, arch, lr, agent, eps): data5 for env, data in res.items() for arch, data2 in data.items() for lr, data3 in data2.items() for agent, data4 in data3.items() for eps, data5 in data4.items()}
