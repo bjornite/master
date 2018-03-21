@@ -132,6 +132,11 @@ for i in range(len(experiments)):
                     #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
                     #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
 # Normalize scores relative to DDQN for each parameter setting
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
 for env, data in res.items():
     best_ret = float('-inf')
     best_high = float('-inf')
@@ -151,7 +156,7 @@ for env, data in res.items():
                                                           np.nanstd(data5["returns"]) / abs(best_ret))
                     data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["highscores"]) / abs(best_high),
                                                           np.nanstd(data5["highscores"]) / abs(best_high))
-                    #data5["maxscore"] /= maxs
+                    data5["mean_best_streak"] = max(moving_average(data5["returns"], n=100))
 
 # Write results to file:
 reform = {(env, arch, lr, agent, eps): data5 for env, data in res.items() for arch, data2 in data.items() for lr, data3 in data2.items() for agent, data4 in data3.items() for eps, data5 in data4.items()}
