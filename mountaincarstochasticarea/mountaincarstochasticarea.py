@@ -20,9 +20,10 @@ class MountainCarEnv(gym.Env):
         self.max_position = 0.6
         self.max_speed = 0.07
         self.goal_position = 0.5
+        self.extra_n = 0.5
 
-        self.low = np.array([self.min_position, -self.max_speed])
-        self.high = np.array([self.max_position, self.max_speed])
+        self.low = np.array([self.min_position, -self.max_speed, -self.extra_n])
+        self.high = np.array([self.max_position, self.max_speed, self.extra_n])
 
         self.viewer = None
 
@@ -38,7 +39,7 @@ class MountainCarEnv(gym.Env):
     def _step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
 
-        position, velocity = self.state
+        position, velocity, _ = self.state
         velocity += (action-1)*0.001 + math.cos(3*position)*(-0.0025)
         velocity = np.clip(velocity, -self.max_speed, self.max_speed)
         position += velocity
@@ -48,13 +49,13 @@ class MountainCarEnv(gym.Env):
         done = bool(position >= self.goal_position)
         reward = -1.0
 
-        self.state = (position, velocity)
+        self.state = (position, velocity, 0)
         if position < -0.3 and position > -0.6:
-            return np.array(self.state) + [0.1*(np.random.random()-0.5), 0], reward, done, {}
+            self.state = (position, velocity, np.random.choice([-self.extra_n, self.extra_n]))
         return np.array(self.state), reward, done, {}
 
     def _reset(self):
-        self.state = np.array([self.np_random.uniform(low=-0.6, high=-0.4), 0])
+        self.state = np.array([self.np_random.uniform(low=-0.6, high=-0.4), 0, 0])
         return np.array(self.state)
 
     def _height(self, xs):
