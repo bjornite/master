@@ -20,7 +20,7 @@ class MountainCarEnv(gym.Env):
         self.max_position = 0.6
         self.max_speed = 0.07
         self.goal_position = 0.5
-        self.extra_n = 1.0
+        self.extra_n = 5.0
 
         self.low = np.array([self.min_position, -self.max_speed, -self.extra_n])
         self.high = np.array([self.max_position, self.max_speed, self.extra_n])
