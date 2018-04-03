@@ -18,7 +18,9 @@ agents = ["DDQN",
           #"CB",
           "Thompson",
           "BootDQN",
-          "KBBoot"]
+          "KBBoot",
+          #"AllCombined",
+]
 learning_rates = [1e-3, 5e-3]
 epsilon = [10000, 1000]
 experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),

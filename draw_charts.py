@@ -18,7 +18,9 @@ agents = [
     #"CB",
     "Thompson",
     "BootDQN",
-    "KBBoot"]
+    "KBBoot",
+    #"AllCombined",
+]
 learning_rates = [1e-3, 5e-3]
 epsilon = [10000, 1000]
 experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
@@ -30,8 +32,8 @@ experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
                #("MountainCar-v0", 1500, [8], "smallonelayernet"),
                #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
                #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               ("MountainCar-v0", 1500, [32], "largeonelayernet"),
-               #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
                #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")
 ]
 
@@ -65,21 +67,23 @@ for i in range(len(experiments)):
             df = df.loc[df['epsilon'] == eps]
             df = df.loc[df['learning_rate'] == lr]
             df = df.loc[df['agent'].isin(agents)]
+            df['return'] = df['return'].rolling(10).median()
             #df.plot()
             #df = df.loc[df['iteration'] <= 600]
             import latexipy as lp
             lp.latexify()  # Change to a serif font that fits with most LaTeX.
             txt = ldir + env + "_lr" + str(lr).replace('.',"_") + "_eps" + str(eps)
             savedir = "experiments/img/" + ldir + "/" + env
-            with lp.figure(txt, directory=savedir, size = lp.figure_size(n_columns=1)):  # saves in img/ by default.
+            with lp.figure(txt, directory=savedir, size = lp.figure_size(n_columns=1), exts=["pdf"]):  # saves in img/ by default.
                 sns.tsplot(data=df,
                            time="iteration",
                            value="return",
                            condition=cond,
                            unit="run",
-                           ci=[5, 50, 90],
-                           err_style="ci_band",
+                           #ci=[5, 50, 90],
+                           err_style=None,
                            estimator=np.nanmean)
                 #estimator=np.nanmean)
                 #plt.ylim([0, 210])
                 plt.xlabel("Episode")
+                plt.ylabel("Total reward")
