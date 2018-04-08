@@ -9,19 +9,19 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-#LOG_DIR_ROOT = "experiments"
-LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
+LOG_DIR_ROOT = "cb_experiments"
+#LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
 agents = ["DDQN",
           #"R",
           "KB",
-          #"CB",
-          "Thompson",
-          "BootDQN",
-          "KBBoot",
+          "CB",
+          #"Thompson",
+          #"BootDQN",
+          #"KBBoot",
           #"AllCombined",
 ]
-learning_rates = [1e-3, 5e-3]
+learning_rates = [1e-3]
 epsilon = [10000, 1000]
 experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
                #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
@@ -29,12 +29,18 @@ experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
                #("CartPole-v0", 600, [32], "largeonelayernet"),
                #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
                #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
-               ("MountainCar-v0", 1500, [8], "smallonelayernet"),
-               ("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
-               ("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               ("MountainCar-v0", 1500, [32], "largeonelayernet"),
-               ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
-               ("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")
+               #("MountainCar-v0", 1500, [8], "smallonelayernet"),
+               #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
+               #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
 ]
 
 res = {}
@@ -88,6 +94,8 @@ for i in range(len(experiments)):
                         cutoff = 300
                     elif env == "MountainCar-v0":
                         cutoff = 1500
+                    elif env == "MountainCarStochasticArea-v0":
+                        cutoff = 1500
                     else:
                         print("Must add cutoff value for this environment: {}".format(env))
                         sys.exit(0)
@@ -118,6 +126,8 @@ for i in range(len(experiments)):
                 if env == "CartPole-v0":
                     cutoff = 300
                 elif env == "MountainCar-v0":
+                    cutoff = 1500
+                elif env == "MountainCarStochasticArea-v0":
                     cutoff = 1500
                 else:
                     print("Must add cutoff value for this environment: {}".format(env))

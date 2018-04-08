@@ -6,27 +6,38 @@ from utilities import get_time_string, get_log_dir, parse_time_string
 
 
 RUN_FILE = "framework.py"
-LOG_DIR_ROOT = "experiments"
+LOG_DIR_ROOT = "singlethread_experiments"
 
-num_workers = 8
+num_workers = 1
 num_runs = 10
 agents = [
+    "DDQN",
     "Thompson",
     "BootDQN",
-    "KBBoot"]
-learning_rates = [1e-3, 5e-3]
+    #"KBBoot",
+    #"KB",
+    #"CB",
+]
+learning_rates = [1e-3]
 epsilon = [10000, 1000]
 experiments = [#("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
-               #("CartPole-v0", 600, [32], "largeonelayernet"),
+               ("CartPole-v0", 600, [32], "largeonelayernet"),
                #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
                #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
                #("MountainCar-v0", 1500, [8], "smallonelayernet"),
                #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
-    ("MountainCar-v0", 1500, [32], "largeonelayernet"),
-    ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
-    ("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-    ("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")]
+               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
+]
 
 log_tf = "--no_tf_log"
 start_time = get_time_string()

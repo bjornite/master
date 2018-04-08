@@ -8,33 +8,39 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-#LOG_DIR_ROOT = "experiments"
-LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
+LOG_DIR_ROOT = "singlethread_experiments"
+#LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
 agents = [
     "DDQN",
-    #"R",
+    "R",
     "KB",
     #"CB",
     "Thompson",
     "BootDQN",
-    "KBBoot",
+    #"KBBoot",
     #"AllCombined",
 ]
 learning_rates = [1e-3, 5e-3]
-epsilon = [10000, 1000]
-experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
-               #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
-               #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
-               #("CartPole-v0", 600, [32], "largeonelayernet"),
-               #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
-               #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
-               #("MountainCar-v0", 1500, [8], "smallonelayernet"),
-               #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
-               #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
+epsilon = [10000, 1000, 100]
+experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
+               ("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
+               ("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
+               ("CartPole-v0", 600, [32], "largeonelayernet"),
+               ("CartPole-v0", 600, [32, 32], "largetwolayernet"),
+               ("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
                ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
-               #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet")
+               ("MountainCar-v0", 1500, [8], "smallonelayernet"),
+               ("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
+               ("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               ("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               ("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
 ]
 
 for i in range(len(experiments)):
@@ -63,25 +69,28 @@ for i in range(len(experiments)):
                                     s["run"] = [counter] * len(s)
                                     series_dict[counter] = s
                                     counter += 1
-            df = pd.concat(series_dict, ignore_index=True)
+            try:
+                df = pd.concat(series_dict, ignore_index=True)
+            except:
+                continue
             df = df.loc[df['epsilon'] == eps]
             df = df.loc[df['learning_rate'] == lr]
             df = df.loc[df['agent'].isin(agents)]
-            df['return'] = df['return'].rolling(10).median()
+            df['median'] = df['return'].rolling(10, center=True, min_periods=1).median()
             #df.plot()
             #df = df.loc[df['iteration'] <= 600]
             import latexipy as lp
             lp.latexify()  # Change to a serif font that fits with most LaTeX.
             txt = ldir + env + "_lr" + str(lr).replace('.',"_") + "_eps" + str(eps)
-            savedir = "experiments/img/" + ldir + "/" + env
+            savedir = "experiments/img/singlethread" + ldir + "/" + env
             with lp.figure(txt, directory=savedir, size = lp.figure_size(n_columns=1), exts=["pdf"]):  # saves in img/ by default.
                 sns.tsplot(data=df,
                            time="iteration",
-                           value="return",
+                           value="median",
                            condition=cond,
                            unit="run",
                            #ci=[5, 50, 90],
-                           err_style=None,
+                           err_style="unit_traces",
                            estimator=np.nanmean)
                 #estimator=np.nanmean)
                 #plt.ylim([0, 210])
