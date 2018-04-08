@@ -200,6 +200,15 @@ class BootDQN(Agent):
         return "Number of modules: {0} Module use: {1}".format(
             self.activated_modules, str(self.active_module_counter))
 
+class EpsBootDQN(BootDQN):
+    
+    def get_action(self, observation, is_test=False):
+        if random.random < 0.02:
+            return self.action_space.sample()
+        else:
+            self.action_steps += 1.0
+            self.active_module_counter[selfelf.active_module] += 1
+            return self.modules[self.active_module].get_action(observation, is_test)
 
 class KBModule(Module):
 
