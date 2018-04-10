@@ -78,7 +78,7 @@ for i in range(len(experiments)):
                                           "EpsBootDQN",
                                           "KBBoot",
                                           "AllCombined"]) or
-                        df['agent'].isin(["DDQN", "KB", "CB", "R"]) and df['epsilon'] == eps]
+                        (df['agent'].isin(["DDQN", "KB", "CB", "R"]) and df['epsilon'] == eps)]
             df = df.loc[df['learning_rate'] == lr]
             #df = df.loc[df['agent'].isin(agents)]
             df['median'] = df['return'].rolling(10, center=True, min_periods=1).median()
