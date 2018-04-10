@@ -73,9 +73,14 @@ for i in range(len(experiments)):
                 df = pd.concat(series_dict, ignore_index=True)
             except:
                 continue
-            df = df.loc[df['epsilon'] == eps]
+            df = df.loc[df['agent'].isin(["Thompson",
+                                          "BootDQN",
+                                          "EpsBootDQN",
+                                          "KBBoot",
+                                          "AllCombined"]) or
+                        df['agent'].isin(["DDQN", "KB", "CB", "R"]) and df['epsilon'] == eps]
             df = df.loc[df['learning_rate'] == lr]
-            df = df.loc[df['agent'].isin(agents)]
+            #df = df.loc[df['agent'].isin(agents)]
             df['median'] = df['return'].rolling(10, center=True, min_periods=1).median()
             #df.plot()
             #df = df.loc[df['iteration'] <= 600]
