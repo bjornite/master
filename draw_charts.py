@@ -79,8 +79,8 @@ for i in range(len(experiments)):
                      "KBBoot",
                      "AllCombined"]
             haseps = ["DDQN", "KB", "CB", "R"]
-            df = df.loc[(df['agent'].isin(noeps) or
-                         (df['agent'].isin(haseps) and df['epsilon'] == eps))]
+            df = df.loc[(df['agent'].isin(noeps) |
+                         (df['agent'].isin(haseps) &  df['epsilon'] == eps))]
             df = df.loc[df['learning_rate'] == lr]
             #df = df.loc[df['agent'].isin(agents)]
             df['median'] = df['return'].rolling(10, center=True, min_periods=1).median()
