@@ -73,12 +73,14 @@ for i in range(len(experiments)):
                 df = pd.concat(series_dict, ignore_index=True)
             except:
                 continue
-            df = df.loc[(df['agent'].isin(["Thompson",
-                                          "BootDQN",
-                                          "EpsBootDQN",
-                                          "KBBoot",
-                                          "AllCombined"]) or
-                         (df['agent'].isin(["DDQN", "KB", "CB", "R"]) and df['epsilon'] == eps))]
+            noeps = ["Thompson",
+                     "BootDQN",
+                     "EpsBootDQN",
+                     "KBBoot",
+                     "AllCombined"]
+            haseps = ["DDQN", "KB", "CB", "R"]
+            df = df.loc[(df['agent'].isin(noeps) or
+                         (df['agent'].isin(haseps) and df['epsilon'] == eps))]
             df = df.loc[df['learning_rate'] == lr]
             #df = df.loc[df['agent'].isin(agents)]
             df['median'] = df['return'].rolling(10, center=True, min_periods=1).median()
