@@ -6,23 +6,25 @@ from utilities import get_time_string, get_log_dir, parse_time_string
 
 
 RUN_FILE = "framework.py"
-LOG_DIR_ROOT = "singlethread_experiments"
+LOG_DIR_ROOT = "atari_experiments"
 
-num_workers = 1
-num_runs = 10
+num_workers = 8
+num_runs = 2
 agents = [
     "DDQN",
     "Thompson",
+    "EpsBootDQN",
     "BootDQN",
-    #"KBBoot",
-    #"KB",
-    #"CB",
+    "KBBoot",
+    "KB",
+    "CB",
+    "AllCombined",
 ]
 learning_rates = [1e-3]
-epsilon = [10000, 1000]
+epsilon = [100000]
 experiments = [#("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
-               ("CartPole-v0", 600, [32], "largeonelayernet"),
+               #("CartPole-v0", 600, [32], "largeonelayernet"),
                #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
                #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
                #("MountainCar-v0", 1500, [8], "smallonelayernet"),
@@ -37,6 +39,7 @@ experiments = [#("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
                #("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
+    ("Breakout-ram-v0", 10000, [128, 128, 128], "atari_test"),
 ]
 
 log_tf = "--no_tf_log"
@@ -59,7 +62,7 @@ for i in range(len(experiments)):
                     if agent == "Thompson" and lr == 1e-3 and ldir == "largeonelayernet":
                         continue
                     commands.append(
-                        "python {0} {1} {2} --log_dir_root={3} --num_rollouts={4} {5} --learning_rate {6} --n_hiddens {7} --epsilon {8}".format(
+                        "python {0} {1} {2} --log_dir_root={3} --atari --num_rollouts={4} {5} --learning_rate {6} --n_hiddens {7} --epsilon {8}".format(
                             RUN_FILE,
                             agent,
                             env,

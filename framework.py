@@ -6,6 +6,7 @@ import random
 import datetime
 import time
 import os
+import sys
 import json
 from shutil import copyfile
 from basic_q_learning import DDQN,  Random_agent, KB, IKBQlearner, CB, SAQlearner, ISAQlearner, MSAQlearner, IMSAQlearner, TESTQlearner, R
@@ -118,9 +119,10 @@ if __name__ == "__main__":
         while not done:
             action = agent.get_action(state)
             obs, r, done, _ = env.step(action)
+            totalr += r
             if args.atari:
                 obs = (obs/255.0) - 0.5
-            totalr += r
+                r = max(-1, min(1, r))
             sars = (state, action, obs, r, done)
             agent.remember(state, action, r, obs, done)
             sarslist.append(sars)
@@ -145,10 +147,10 @@ if __name__ == "__main__":
                 agent.train(args.no_tf_log)
                 global_steps += 1
         returns.append(totalr)
-        if i % (args.num_rollouts / 100) == 0:
+        #if i % (args.num_rollouts / 100) == 0:
             #agent.plot_state_visits()
             #agent.save_model(log_dir, "{}_percent.ckpt".format(i / (args.num_rollouts / 100)))
-            print("iter {0}, reward: {1:.2f} {2}".format(i, totalr, agent.debug_string()))
+        print("iter {0}, reward: {1:.2f} {2} {3}".format(i, totalr, agent.debug_string(), args.agentname))
         test_results.append(None)
     learning_rate = 0
     reg_beta = 0
@@ -163,3 +165,4 @@ if __name__ == "__main__":
     log_data.to_csv("{0}/returns.csv".format(log_dir))
     with open("{0}/trajectories.pkl".format(log_dir), 'wb+') as f:
         pickle.dump(sarslist, f)
+    sys.exit(0)

@@ -8,16 +8,16 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-LOG_DIR_ROOT = "singlethread_experiments"
+LOG_DIR_ROOT = "epsbootdqn_experiments"
 #LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
 agents = [
     "DDQN",
-    "R",
-    "KB",
+    #"R",
+    #"KB",
     #"CB",
-    "Thompson",
-    "BootDQN",
+    #"Thompson",
+    "EpsBootDQN",
     #"KBBoot",
     #"AllCombined",
 ]
