@@ -9,37 +9,38 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-LOG_DIR_ROOT = "cb_experiments"
-#LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
+#LOG_DIR_ROOT = "cb_experiments"
+LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
 agents = ["DDQN",
           #"R",
           "KB",
-          "CB",
-          #"Thompson",
-          #"BootDQN",
+          #"CB",
+          "Thompson",
+          "BootDQN",
+          #"EpsBootDQN",
           #"KBBoot",
           #"AllCombined",
 ]
 learning_rates = [1e-3]
-epsilon = [10000, 1000]
-experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
-               #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
-               #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
-               #("CartPole-v0", 600, [32], "largeonelayernet"),
-               #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
-               #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
-               #("MountainCar-v0", 1500, [8], "smallonelayernet"),
-               #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
-               #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
-               #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
-               #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
+epsilon = [10000, 100]
+experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
+               ("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
+               ("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
+               ("CartPole-v0", 600, [32], "largeonelayernet"),
+               ("CartPole-v0", 600, [32, 32], "largetwolayernet"),
+               ("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
+               ("MountainCar-v0", 1500, [8], "smallonelayernet"),
+               ("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
+               ("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               ("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
+               ("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
                #("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
 ]
 
@@ -49,8 +50,7 @@ for i in range(len(experiments)):
     counter = 0
     series_dict = {}
     env, rollouts, hiddens, ldir = experiments[i]
-    res[env] = res.get(env, {})
-    res[env][str(hiddens)] = {}
+    res[str(hiddens)] = res.get(str(hiddens), {})
     log_dir = LOG_DIR_ROOT + "/" + ldir
     for subdir, dirs, files in os.walk(log_dir):
         for dir in sorted(dirs):
@@ -76,109 +76,78 @@ for i in range(len(experiments)):
     #print(env + ":")
     for lr in learning_rates:
         #print("\tlr={}:".format(lr))
-        res[env][str(hiddens)][lr] = {}
+        res[str(hiddens)][lr] = {}
         #print("\t\teps={}:".format(eps))
         for agent in agents:
-            res[env][str(hiddens)][lr][agent] = {}
-            if agent in ["DDQN", "R", "KB", "CB"]:
-                for eps in epsilon:
-                    res[env][str(hiddens)][lr][agent][eps] = {}
-                    df = pd.concat(series_dict, ignore_index=True)
-                    df = df.loc[df['epsilon'] == eps]
-                    df = df.loc[df['learning_rate'] == lr]
-                    df = df.loc[df['agent'] == agent]
-                    #print(agent)
-                    #df.plot()
-                    #df = df.loc[df['iteration'] <= 600]
-                    if env == "CartPole-v0":
-                        cutoff = 300
-                    elif env == "MountainCar-v0":
-                        cutoff = 1500
-                    elif env == "MountainCarStochasticArea-v0":
-                        cutoff = 1500
-                    else:
-                        print("Must add cutoff value for this environment: {}".format(env))
-                        sys.exit(0)
-                    res[env][str(hiddens)][lr][agent][eps]['returns'] = []
-                    res[env][str(hiddens)][lr][agent][eps]['highscores'] = []
-                    res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'] = []
-                    for run in set(df['run']):
-                        df_run = df.loc[df['run'] == run]
-                        # Calculate sum of returns
-                        returns = df_run.loc[df_run['iteration'] <= cutoff]['return'].sum()
-                        # Calculate average of 90th percentile episodes
-                        highscores = df_run.loc[df_run['return'] >= df_run['return'].quantile(.90)]['return'].mean()
-                        maxscore = df_run['return'].max()
-                        res[env][str(hiddens)][lr][agent][eps]['returns'].append(returns)
-                        res[env][str(hiddens)][lr][agent][eps]['highscores'].append(highscores)
-                        res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
-                        #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
-                        #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
+            res[str(hiddens)][lr][agent] = {}
+            noeps = ["Thompson",
+                     "BootDQN",
+                     "EpsBootDQN",
+                     "KBBoot",
+                     "AllCombined"]
+            haseps = ["DDQN", "KB", "CB", "R"]
+            df = pd.concat(series_dict, ignore_index=True)
+            df = df.loc[df['learning_rate'] == lr]
+            df = df.loc[df['agent'].isin(agents) & df["epsilon"].isin(epsilon)]
+            df.loc[df['agent'].isin(haseps), "agent"] = df["agent"].loc[df['agent'].isin(haseps)] + " k: " + df["epsilon"].loc[df['agent'].isin(haseps)].astype(str)
+            res[str(hiddens)][lr][agent] = {}
+            #print(agent)
+            #df.plot()
+            #df = df.loc[df['iteration'] <= 600]
+            if env == "CartPole-v0":
+                cutoff = 300
+            elif env == "MountainCar-v0":
+                cutoff = 1500
+            elif env == "MountainCarStochasticArea-v0":
+                cutoff = 1500
             else:
-                eps = "N/A"
-                res[env][str(hiddens)][lr][agent][eps] = {}
-                df = pd.concat(series_dict, ignore_index=True)
-                df = df.loc[df['learning_rate'] == lr]
-                df = df.loc[df['agent'] == agent]
-                #print(agent)
-                #df.plot()
-                #df = df.loc[df['iteration'] <= 600]
-                if env == "CartPole-v0":
-                    cutoff = 300
-                elif env == "MountainCar-v0":
-                    cutoff = 1500
-                elif env == "MountainCarStochasticArea-v0":
-                    cutoff = 1500
-                else:
-                    print("Must add cutoff value for this environment: {}".format(env))
-                    sys.exit(0)
-                res[env][str(hiddens)][lr][agent][eps]['returns'] = []
-                res[env][str(hiddens)][lr][agent][eps]['highscores'] = []
-                res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'] = []
-                for run in set(df['run']):
-                    df_run = df.loc[df['run'] == run]
-                    # Calculate sum of returns
-                    returns = df_run.loc[df_run['iteration'] <= cutoff]['return'].sum()
-                    # Calculate average of 90th percentile episodes
-                    highscores = df_run.loc[df_run['return'] >= df_run['return'].quantile(.90)]['return'].mean()
-                    maxscore = df_run['return'].max()
-                    res[env][str(hiddens)][lr][agent][eps]['returns'].append(returns)
-                    res[env][str(hiddens)][lr][agent][eps]['highscores'].append(highscores)
-                    res[env][str(hiddens)][lr][agent][eps]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
-                    #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
-                    #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
+                print("Must add cutoff value for this environment: {}".format(env))
+                sys.exit(0)
+            res[str(hiddens)][lr][agent]['returns'] = []
+            res[str(hiddens)][lr][agent]['highscores'] = []
+            res[str(hiddens)][lr][agent]['mean_best_streak'] = []
+            for run in set(df['run']):
+                df_run = df.loc[df['run'] == run]
+                # Calculate sum of returns
+                returns = df_run.loc[df_run['iteration'] <= cutoff]['return'].sum()
+                # Calculate average of 90th percentile episodes
+                highscores = df_run.loc[df_run['return'] >= df_run['return'].quantile(.90)]['return'].mean()
+                maxscore = df_run['return'].max()
+                res[str(hiddens)][lr][agent]['returns'].append(returns)
+                res[str(hiddens)][lr][agent]['highscores'].append(highscores)
+                res[str(hiddens)][lr][agent]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
+                #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
+                #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
 # Normalize scores relative to DDQN for each parameter setting
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-for env, data in res.items():
+
+for arch, data2 in data.items():
     best_ret = float('-inf')
     best_high = float('-inf')
-    for arch, data2 in data.items():
-        for lr, data3 in data2.items():
-            for eps, data_ddqn in data3["DDQN"].items():
-                ret = np.nanmean(data3["DDQN"][eps]["returns"])
-                if ret > best_ret: best_ret = ret
-                high = np.nanmean(data3["DDQN"][eps]["highscores"])
-                if high > best_high: best_high = high
-    for arch, data2 in data.items():
-        for lr, data3 in data2.items():
-            for agent, data4 in data3.items():
-                for eps, data5 in data4.items():
-                #maxs = data4["DDQN"]["maxscore"]
-                    data5['returns'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["returns"]),# / abs(best_ret),
-                                                          np.nanstd(data5["returns"])) # / abs(best_ret))
-                    data5['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["highscores"]), # / abs(best_high),
-                                                          np.nanstd(data5["highscores"])) # / abs(best_high))
-                    data5['mean_best_streak'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data5["mean_best_streak"]), # / abs(best_high),
-                                                          np.nanstd(data5["mean_best_streak"])) # / abs(best_high))
+    for lr, data3 in data2.items():
+        ret = np.nanmean(data3["DDQN"]["returns"])
+        if ret > best_ret: best_ret = ret
+        high = np.nanmean(data3["DDQN"]["highscores"])
+        if high > best_high: best_high = high
+for arch, data2 in data.items():
+    for lr, data3 in data2.items():
+        for agent, data4 in data3.items():
+            #maxs = data4["DDQN"]["maxscore"]
+            data4['returns'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data4["returns"]),# / abs(best_ret),
+                                                         np.nanstd(data4["returns"])) # / abs(best_ret))
+            data4['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data4["highscores"]), # / abs(best_high),
+                                                            np.nanstd(data4["highscores"])) # / abs(best_high))
+            data4['mean_best_streak'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data4["mean_best_streak"]), # / abs(best_high),
+                                                                  np.nanstd(data4["mean_best_streak"])) # / abs(best_high))
 
 # Write results to file:
-reform = {(env, arch, lr, agent, eps): data5 for env, data in res.items() for arch, data2 in data.items() for lr, data3 in data2.items() for agent, data4 in data3.items() for eps, data5 in data4.items()}
+reform = {(arch, lr, agent): data4 for arch, data in res.items() for lr, data2 in data.items() for agent, data3 in data2.items()}
 df = pd.DataFrame.from_dict(reform, orient="index")
-mi = pd.MultiIndex.from_tuples(df.index, names=["env", "layers", "lr", "agent", "epsilon-schedule"])
+mi = pd.MultiIndex.from_tuples(df.index, names=["layers", "lr", "agent"])
 df.index = mi
 def formater(x):
     return "{0:.2f}".format(x)
