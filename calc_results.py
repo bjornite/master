@@ -9,8 +9,8 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-#LOG_DIR_ROOT = "cb_experiments"
-LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
+LOG_DIR_ROOT = "experiments"
+#LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
 agents = ["DDQN",
           #"R",
@@ -25,17 +25,17 @@ agents = ["DDQN",
 learning_rates = [1e-3]
 epsilon = [10000, 100]
 experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
-               ("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
-               ("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
-               ("CartPole-v0", 600, [32], "largeonelayernet"),
-               ("CartPole-v0", 600, [32, 32], "largetwolayernet"),
-               ("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
-               ("MountainCar-v0", 1500, [8], "smallonelayernet"),
-               ("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
-               ("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               ("MountainCar-v0", 1500, [32], "largeonelayernet"),
-               ("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
-               ("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
+               #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
+               #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
+               #("CartPole-v0", 600, [32], "largeonelayernet"),
+               #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
+               #("CartPole-v0", 600, [32, 32, 32], "largethreelayernet"),
+               #("MountainCar-v0", 1500, [8], "smallonelayernet"),
+               #("MountainCar-v0", 1500, [8, 8], "smalltwolayernet"),
+               #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               #("MountainCar-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
                #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
@@ -86,14 +86,16 @@ for i in range(len(experiments)):
                      "KBBoot",
                      "AllCombined"]
             haseps = ["DDQN", "KB", "CB", "R"]
-            df = pd.concat(series_dict, ignore_index=True)
+            try:
+                df = pd.concat(series_dict, ignore_index=True)
+            except:
+                continue
             df = df.loc[df['learning_rate'] == lr]
-            df = df.loc[df['agent'].isin(agents) & df["epsilon"].isin(epsilon)]
+            df = df.loc[df["agent"] == agent]
+            df = df.loc[df["epsilon"].isin(epsilon)]
             df.loc[df['agent'].isin(haseps), "agent"] = df["agent"].loc[df['agent'].isin(haseps)] + " k: " + df["epsilon"].loc[df['agent'].isin(haseps)].astype(str)
             res[str(hiddens)][lr][agent] = {}
-            #print(agent)
-            #df.plot()
-            #df = df.loc[df['iteration'] <= 600]
+
             if env == "CartPole-v0":
                 cutoff = 300
             elif env == "MountainCar-v0":
@@ -125,7 +127,7 @@ def moving_average(a, n=3) :
     return ret[n - 1:] / n
 
 
-for arch, data2 in data.items():
+for arch, data2 in res.items():
     best_ret = float('-inf')
     best_high = float('-inf')
     for lr, data3 in data2.items():
@@ -133,7 +135,7 @@ for arch, data2 in data.items():
         if ret > best_ret: best_ret = ret
         high = np.nanmean(data3["DDQN"]["highscores"])
         if high > best_high: best_high = high
-for arch, data2 in data.items():
+for arch, data2 in res.items():
     for lr, data3 in data2.items():
         for agent, data4 in data3.items():
             #maxs = data4["DDQN"]["maxscore"]
@@ -145,7 +147,7 @@ for arch, data2 in data.items():
                                                                   np.nanstd(data4["mean_best_streak"])) # / abs(best_high))
 
 # Write results to file:
-reform = {(arch, lr, agent): data4 for arch, data in res.items() for lr, data2 in data.items() for agent, data3 in data2.items()}
+reform = {(arch, lr, agent): data3 for arch, data in res.items() for lr, data2 in data.items() for agent, data3 in data2.items()}
 df = pd.DataFrame.from_dict(reform, orient="index")
 mi = pd.MultiIndex.from_tuples(df.index, names=["layers", "lr", "agent"])
 df.index = mi
