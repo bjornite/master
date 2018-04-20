@@ -9,22 +9,24 @@ import datetime
 import argparse
 from utilities import get_time_string
 
-LOG_DIR_ROOT = "experiments"
-#LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
+#LOG_DIR_ROOT = "experiments"
+LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 cond = "agent"
-agents = ["DDQN",
-          #"R",
-          "KB",
-          #"CB",
-          "Thompson",
-          "BootDQN",
+agents = ["DDQN k: 10000",
+          #"DDQN k: 100",
+          "R k: 10000",
+          "KB k: 10000",
+          #"KB k: 100",
+          "CB k: 10000",
+          #"Thompson",
+          #"BootDQN",
           #"EpsBootDQN",
           #"KBBoot",
           #"AllCombined",
 ]
 learning_rates = [1e-3]
 epsilon = [10000, 100]
-experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
+experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
                #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
                #("CartPole-v0", 600, [32], "largeonelayernet"),
@@ -36,12 +38,12 @@ experiments = [("CartPole-v0", 600, [8], "smallonelayernet"),
                #("MountainCar-v0", 1500, [32], "largeonelayernet"),
                #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
                #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
-               #("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
-               #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
-               #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
-               #("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
-               #("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
-               #("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
+               ("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
 ]
 
 res = {}
@@ -91,9 +93,9 @@ for i in range(len(experiments)):
             except:
                 continue
             df = df.loc[df['learning_rate'] == lr]
-            df = df.loc[df["agent"] == agent]
             df = df.loc[df["epsilon"].isin(epsilon)]
             df.loc[df['agent'].isin(haseps), "agent"] = df["agent"].loc[df['agent'].isin(haseps)] + " k: " + df["epsilon"].loc[df['agent'].isin(haseps)].astype(str)
+            df = df.loc[df["agent"] == agent]
             res[str(hiddens)][lr][agent] = {}
 
             if env == "CartPole-v0":
@@ -107,7 +109,7 @@ for i in range(len(experiments)):
                 sys.exit(0)
             res[str(hiddens)][lr][agent]['returns'] = []
             res[str(hiddens)][lr][agent]['highscores'] = []
-            res[str(hiddens)][lr][agent]['mean_best_streak'] = []
+            #res[str(hiddens)][lr][agent]['mean_best_streak'] = []
             for run in set(df['run']):
                 df_run = df.loc[df['run'] == run]
                 # Calculate sum of returns
@@ -117,7 +119,7 @@ for i in range(len(experiments)):
                 maxscore = df_run['return'].max()
                 res[str(hiddens)][lr][agent]['returns'].append(returns)
                 res[str(hiddens)][lr][agent]['highscores'].append(highscores)
-                res[str(hiddens)][lr][agent]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
+                #res[str(hiddens)][lr][agent]['mean_best_streak'].append(df_run['return'].rolling(100).mean().max())
                 #res[env][str(hiddens)][lr][eps][agent]['maxscore'] = maxscore
                 #print("\t\t\t{0}:\t{1:.0f}\t{2:.2f}\t{3}".format(agent, returns, highscores, maxscore))
 # Normalize scores relative to DDQN for each parameter setting
@@ -126,15 +128,6 @@ def moving_average(a, n=3) :
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-
-for arch, data2 in res.items():
-    best_ret = float('-inf')
-    best_high = float('-inf')
-    for lr, data3 in data2.items():
-        ret = np.nanmean(data3["DDQN"]["returns"])
-        if ret > best_ret: best_ret = ret
-        high = np.nanmean(data3["DDQN"]["highscores"])
-        if high > best_high: best_high = high
 for arch, data2 in res.items():
     for lr, data3 in data2.items():
         for agent, data4 in data3.items():
@@ -143,13 +136,13 @@ for arch, data2 in res.items():
                                                          np.nanstd(data4["returns"])) # / abs(best_ret))
             data4['highscores'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data4["highscores"]), # / abs(best_high),
                                                             np.nanstd(data4["highscores"])) # / abs(best_high))
-            data4['mean_best_streak'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data4["mean_best_streak"]), # / abs(best_high),
-                                                                  np.nanstd(data4["mean_best_streak"])) # / abs(best_high))
+            #data4['mean_best_streak'] = '{0:.2f} ±{1:.2f}'.format(np.nanmean(data4["mean_best_streak"]), # / abs(best_high),
+                                                                  #np.nanstd(data4["mean_best_streak"])) # / abs(best_high))
 
 # Write results to file:
-reform = {(arch, lr, agent): data3 for arch, data in res.items() for lr, data2 in data.items() for agent, data3 in data2.items()}
+reform = {(arch[1:-1], agent): data3 for arch, data in res.items() for lr, data2 in data.items() for agent, data3 in data2.items()}
 df = pd.DataFrame.from_dict(reform, orient="index")
-mi = pd.MultiIndex.from_tuples(df.index, names=["layers", "lr", "agent"])
+mi = pd.MultiIndex.from_tuples(df.index, names=["layers", "agent"])
 df.index = mi
 def formater(x):
     return "{0:.2f}".format(x)

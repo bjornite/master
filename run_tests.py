@@ -11,19 +11,20 @@ LOG_DIR_ROOT = "/media/bjornivar/63B84F7A4C4AA554/Master/experiments"
 num_workers = 8
 num_runs = 10
 agents = [
-    #"DDQN",
-    "R"
+    "DDQN",
+    #"R",
     #"Thompson",
     #"EpsBootDQN",
     #"BootDQN",
     #"KBBoot",
-    #"KB",
+    "KB",
     #"CB",
     #"AllCombined",
 ]
 learning_rates = [1e-3]
 epsilon = [10000]
-experiments = [#("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
+experiments = [#("CartPole-v0", 600, [8], "smallonelayernet"),
+               #("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("CartPole-v0", 600, [8, 8, 8], "smallthreelayernet"),
                #("CartPole-v0", 600, [32], "largeonelayernet"),
                #("CartPole-v0", 600, [32, 32], "largetwolayernet"),
@@ -34,11 +35,11 @@ experiments = [#("CartPole-v0", 600, [8, 8], "smalltwolayernet"),
                #("MountainCar-v0", 1500, [32, 32], "largetwolayernet"),
                #("MountainCar-v0", 1500, [8, 8, 8], "smallthreelayernet"),
                #("MountainCar-v0", 1500, [32, 32, 32], "largethreelayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
-               ("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32, 32], "largetwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [32], "largeonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8], "smallonelayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8], "smalltwolayernet"),
+               #("MountainCarStochasticArea-v0", 1500, [8, 8, 8], "smallthreelayernet"),
                ("MountainCarStochasticArea-v0", 1500, [32, 32, 32], "largethreelayernet"),
     #("Breakout-ram-v0", 10000, [128, 128, 128], "atari_test"),
 ]
